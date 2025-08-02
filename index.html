@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Gestión de órdenes para restaurante - App móvil">
+    <meta name="theme-color" content="#2196F3">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Marea Picante">
+    
+    <!-- PWA manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/svg+xml" href="icon-192.svg">
+    <link rel="apple-touch-icon" href="icon-192.svg">
+    
+    <title>Marea Picante - Gestión de Órdenes</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Loading screen -->
+        <div id="loading" class="loading-screen">
+            <div class="loading-spinner"></div>
+            <p>Cargando Marea Picante...</p>
+        </div>
+
+        <!-- Main app container -->
+        <div id="main-app" class="mobile-app" style="display: none;">
+            <!-- Header -->
+            <header class="mobile-header">
+                <h1>Marea Picante</h1>
+                <div class="header-actions">
+                    <button id="refresh-btn" class="btn-icon" title="Actualizar">
+                        <span>🔄</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Content area -->
+            <main class="mobile-content">
+                <!-- Nueva Orden Screen -->
+                <div id="new-order-screen" class="screen active">
+                    <div class="screen-header">
+                        <h2>Nueva Orden</h2>
+                    </div>
+                    
+                    <!-- Step 1: Seleccionar Mesa -->
+                    <div id="step-table" class="step active">
+                        <h3>Seleccionar Mesa</h3>
+                        <p class="step-description">Toca las mesas para seleccionar. Puedes elegir múltiples mesas para una sola orden.</p>
+                        <div class="tables-grid">
+                            <!-- Las mesas se cargarán dinámicamente desde la API -->
+                        </div>
+                        <div class="step-actions">
+                            <button id="continue-to-products" class="btn-primary" disabled>Continuar</button>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Seleccionar Productos -->
+                    <div id="step-products" class="step">
+                        <div class="step-header">
+                            <button id="back-to-table" class="btn-back">← Volver</button>
+                            <h3>Seleccionar Productos</h3>
+                        </div>
+                        <div class="products-categories">
+                            <button class="category-btn active" data-category="entradas">Entradas</button>
+                            <button class="category-btn" data-category="principales">Principales</button>
+                            <button class="category-btn" data-category="bebidas">Bebidas</button>
+                            <button class="category-btn" data-category="postres">Postres</button>
+                        </div>
+                        <div id="products-grid" class="products-grid">
+                            <!-- Products will be loaded here -->
+                        </div>
+                        <div class="step-actions">
+                            <button id="continue-to-preview" class="btn-primary" disabled>Ver Resumen</button>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Preview y Crear -->
+                    <div id="step-preview" class="step">
+                        <div class="step-header">
+                            <button id="back-to-products" class="btn-back">← Volver</button>
+                            <h3>Resumen de Orden</h3>
+                        </div>
+                        <div class="order-summary">
+                            <div class="summary-table">
+                                <strong>Mesa: <span id="selected-table">-</span></strong>
+                            </div>
+                            <div class="summary-customer">
+                                <input type="text" id="customer-name" placeholder="Nombre del cliente (opcional)">
+                            </div>
+                            <div id="order-items" class="order-items">
+                                <!-- Selected items will appear here -->
+                            </div>
+                            <div class="order-total">
+                                <strong>Total: $<span id="order-total">0.00</span></strong>
+                            </div>
+                        </div>
+                        <div class="step-actions">
+                            <button id="create-order" class="btn-primary">Crear Orden</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Órdenes Screen -->
+                <div id="orders-screen" class="screen">
+                    <div class="screen-header">
+                        <h2>Órdenes Activas</h2>
+                        <div class="orders-stats">
+                            <span id="orders-count">0 órdenes</span>
+                        </div>
+                    </div>
+                    <div id="orders-list" class="orders-list">
+                        <div class="empty-state">
+                            <div class="empty-icon">📋</div>
+                            <p>No hay órdenes activas</p>
+                            <button class="btn-primary" onclick="switchToNewOrder()">Crear Primera Orden</button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Bottom Navigation -->
+            <nav class="bottom-nav">
+                <button class="nav-item active" data-screen="new-order">
+                    <span class="nav-icon">➕</span>
+                    <span class="nav-label">Nueva Orden</span>
+                </button>
+                <button class="nav-item" data-screen="orders">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-label">Órdenes</span>
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Order detail modal -->
+    <div id="order-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Detalle de Orden</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Order details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary modal-close">Cerrar</button>
+                <button id="delete-order-btn" class="btn-danger">Eliminar Orden</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

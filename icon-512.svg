@@ -1,0 +1,80 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fondo circular -->
+  <circle cx="256" cy="256" r="256" fill="#2196F3"/>
+  
+  <!-- Ola decorativa inferior -->
+  <path d="M0 320 Q128 280 256 320 T512 320 V512 H0 Z" fill="#1976D2" opacity="0.7"/>
+  
+  <!-- Ola decorativa superior -->
+  <path d="M0 180 Q128 160 256 180 T512 180 V0 H0 Z" fill="#42A5F5" opacity="0.3"/>
+  
+  <!-- Plato principal -->
+  <circle cx="256" cy="240" r="120" fill="#FFFFFF" stroke="#E0E0E0" stroke-width="4"/>
+  
+  <!-- Sombra del plato -->
+  <ellipse cx="256" cy="360" rx="100" ry="20" fill="#000000" opacity="0.1"/>
+  
+  <!-- Comida en el plato - Plato principal -->
+  <ellipse cx="256" cy="220" rx="65" ry="40" fill="#FF6B35"/>
+  
+  <!-- Guarniciones -->
+  <ellipse cx="220" cy="240" rx="30" ry="20" fill="#4CAF50"/>
+  <ellipse cx="290" cy="250" rx="25" ry="15" fill="#FFC107"/>
+  <ellipse cx="240" cy="270" rx="20" ry="12" fill="#E91E63"/>
+  
+  <!-- Detalles de la comida -->
+  <circle cx="250" cy="210" r="8" fill="#D32F2F"/>
+  <circle cx="270" cy="215" r="6" fill="#388E3C"/>
+  <circle cx="235" cy="235" r="5" fill="#F57C00"/>
+  
+  <!-- Tenedor -->
+  <g transform="translate(350, 180)">
+    <rect x="0" y="0" width="8" height="70" fill="#757575"/>
+    <rect x="-6" y="0" width="3" height="25" fill="#757575"/>
+    <rect x="3" y="0" width="3" height="25" fill="#757575"/>
+    <rect x="12" y="0" width="3" height="25" fill="#757575"/>
+    <!-- Mango decorativo -->
+    <rect x="0" y="50" width="8" height="20" fill="#8D6E63"/>
+  </g>
+  
+  <!-- Cuchillo -->
+  <g transform="translate(380, 180)">
+    <rect x="0" y="0" width="6" height="70" fill="#757575"/>
+    <rect x="0" y="0" width="20" height="6" fill="#757575"/>
+    <!-- Mango decorativo -->
+    <rect x="0" y="50" width="6" height="20" fill="#8D6E63"/>
+  </g>
+  
+  <!-- Servilleta -->
+  <g transform="translate(120, 200)">
+    <rect x="0" y="0" width="40" height="40" fill="#FFFFFF" opacity="0.9" rx="5"/>
+    <rect x="5" y="5" width="30" height="30" fill="none" stroke="#E0E0E0" stroke-width="1" rx="3"/>
+  </g>
+  
+  <!-- Texto principal -->
+  <text x="256" y="400" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="36" font-weight="bold">MAREA</text>
+  <text x="256" y="440" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="24" font-weight="normal">PICANTE</text>
+  
+  <!-- Puntos decorativos -->
+  <circle cx="150" cy="150" r="8" fill="#FFFFFF" opacity="0.6"/>
+  <circle cx="350" cy="140" r="6" fill="#FFFFFF" opacity="0.4"/>
+  <circle cx="180" cy="350" r="5" fill="#FFFFFF" opacity="0.5"/>
+  <circle cx="320" cy="360" r="7" fill="#FFFFFF" opacity="0.3"/>
+  
+  <!-- Estrellas decorativas -->
+  <g transform="translate(100, 100)">
+    <polygon points="0,-8 2,-2 8,-2 3,2 5,8 0,4 -5,8 -3,2 -8,-2 -2,-2" fill="#FFFFFF" opacity="0.7"/>
+  </g>
+  
+  <g transform="translate(400, 120)">
+    <polygon points="0,-6 1.5,-1.5 6,-1.5 2.25,1.5 3.75,6 0,3 -3.75,6 -2.25,1.5 -6,-1.5 -1.5,-1.5" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+  
+  <!-- Icono móvil en la esquina -->
+  <g transform="translate(420, 420)">
+    <rect x="0" y="0" width="60" height="80" rx="8" fill="#FFFFFF" opacity="0.9"/>
+    <rect x="5" y="5" width="50" height="60" rx="4" fill="#2196F3"/>
+    <circle cx="30" cy="75" r="3" fill="#FFFFFF"/>
+    <text x="30" y="35" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="8" font-weight="bold">APP</text>
+  </g>
+</svg>

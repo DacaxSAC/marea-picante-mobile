@@ -1,0 +1,37 @@
+<svg width="192" height="192" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fondo circular -->
+  <circle cx="96" cy="96" r="96" fill="#2196F3"/>
+  
+  <!-- Ola decorativa -->
+  <path d="M0 120 Q48 100 96 120 T192 120 V192 H0 Z" fill="#1976D2" opacity="0.7"/>
+  
+  <!-- Plato principal -->
+  <circle cx="96" cy="90" r="45" fill="#FFFFFF" stroke="#E0E0E0" stroke-width="2"/>
+  
+  <!-- Comida en el plato -->
+  <ellipse cx="96" cy="85" rx="25" ry="15" fill="#FF6B35"/>
+  <ellipse cx="85" cy="90" rx="12" ry="8" fill="#4CAF50"/>
+  <ellipse cx="107" cy="92" rx="10" ry="6" fill="#FFC107"/>
+  
+  <!-- Tenedor -->
+  <g transform="translate(130, 70)">
+    <rect x="0" y="0" width="3" height="25" fill="#757575"/>
+    <rect x="-2" y="0" width="1" height="8" fill="#757575"/>
+    <rect x="1" y="0" width="1" height="8" fill="#757575"/>
+    <rect x="4" y="0" width="1" height="8" fill="#757575"/>
+  </g>
+  
+  <!-- Cuchillo -->
+  <g transform="translate(140, 70)">
+    <rect x="0" y="0" width="2" height="25" fill="#757575"/>
+    <rect x="0" y="0" width="8" height="2" fill="#757575"/>
+  </g>
+  
+  <!-- Texto decorativo -->
+  <text x="96" y="150" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="14" font-weight="bold">MP</text>
+  
+  <!-- Puntos decorativos -->
+  <circle cx="60" cy="60" r="3" fill="#FFFFFF" opacity="0.6"/>
+  <circle cx="132" cy="55" r="2" fill="#FFFFFF" opacity="0.4"/>
+  <circle cx="70" cy="130" r="2" fill="#FFFFFF" opacity="0.5"/>
+</svg>
