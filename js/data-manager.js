@@ -41,11 +41,23 @@ export class DataManager {
         this.data.currentCategoryId = categoryId;
     }
 
-    // Cargar mesas desde la API
+    // Cargar mesas desde localStorage o API
     async loadTables() {
         try {
+            // Verificar si hay datos en localStorage
+            const cachedTables = localStorage.getItem('marea_tables');
+            if (cachedTables) {
+                this.data.tables = JSON.parse(cachedTables);
+                console.log('Mesas cargadas desde localStorage:', this.data.tables);
+                return true;
+            }
+            
+            // Si no hay datos en localStorage, cargar desde la API
             this.data.tables = await this.apiService.loadTables();
             console.log('Mesas cargadas desde la API:', this.data.tables);
+            
+            // Guardar en localStorage para futuras cargas
+            localStorage.setItem('marea_tables', JSON.stringify(this.data.tables));
             return true;
         } catch (error) {
             console.error('Error al cargar las mesas:', error);
@@ -59,11 +71,29 @@ export class DataManager {
         this.data.tables = [];
     }
 
-    // Cargar categorías desde la API
+    // Cargar categorías desde localStorage o API
     async loadCategories() {
         try {
+            // Verificar si hay datos en localStorage
+            const cachedCategories = localStorage.getItem('marea_categories');
+            if (cachedCategories) {
+                this.data.categories = JSON.parse(cachedCategories);
+                console.log('Categorías cargadas desde localStorage:', this.data.categories);
+                
+                // Establecer la primera categoría como activa
+                if (this.data.categories.length > 0) {
+                    this.data.currentCategory = this.data.categories[0].key || this.data.categories[0].name.toLowerCase();
+                    this.data.currentCategoryId = this.data.categories[0].id || this.data.categories[0].categoryId || 1;
+                }
+                return true;
+            }
+            
+            // Si no hay datos en localStorage, cargar desde la API
             this.data.categories = await this.apiService.loadCategories();
             console.log('Categorías cargadas desde la API:', this.data.categories);
+            
+            // Guardar en localStorage para futuras cargas
+            localStorage.setItem('marea_categories', JSON.stringify(this.data.categories));
             
             // Establecer la primera categoría como activa
             if (this.data.categories.length > 0) {
@@ -98,10 +128,23 @@ export class DataManager {
     }
 
     // Cargar productos desde la API
+    // Cargar productos desde localStorage o API
     async loadProducts() {
         try {
+            // Verificar si hay datos en localStorage
+            const cachedProducts = localStorage.getItem('marea_products');
+            if (cachedProducts) {
+                this.data.allProducts = JSON.parse(cachedProducts);
+                console.log('Productos cargados desde localStorage:', this.data.allProducts);
+                return true;
+            }
+            
+            // Si no hay datos en localStorage, cargar desde la API
             this.data.allProducts = await this.apiService.loadProducts();
             console.log('Productos cargados desde la API:', this.data.allProducts);
+            
+            // Guardar en localStorage para futuras cargas
+            localStorage.setItem('marea_products', JSON.stringify(this.data.allProducts));
             return true;
         } catch (error) {
             console.error('Error al cargar los productos:', error);
@@ -259,5 +302,37 @@ export class DataManager {
     // Función auxiliar para capitalizar
     capitalizeFirst(str) {
         return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    // Métodos para gestionar el cache de localStorage
+    clearCache() {
+        localStorage.removeItem('marea_tables');
+        localStorage.removeItem('marea_categories');
+        localStorage.removeItem('marea_products');
+        console.log('Cache de localStorage limpiado');
+    }
+
+    clearTablesCache() {
+        localStorage.removeItem('marea_tables');
+        console.log('Cache de mesas limpiado');
+    }
+
+    clearCategoriesCache() {
+        localStorage.removeItem('marea_categories');
+        console.log('Cache de categorías limpiado');
+    }
+
+    clearProductsCache() {
+        localStorage.removeItem('marea_products');
+        console.log('Cache de productos limpiado');
+    }
+
+    // Forzar recarga desde la API
+    async forceReloadFromAPI() {
+        this.clearCache();
+        await this.loadTables();
+        await this.loadCategories();
+        await this.loadProducts();
+        console.log('Datos recargados forzosamente desde la API');
     }
 }

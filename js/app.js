@@ -15,7 +15,7 @@ export class MobileApp {
 
     async init() {
         try {
-            // Cargar datos guardados2
+            // Cargar datos guardados
             this.dataManager.loadOrders();
             
             // Cargar datos desde la API
