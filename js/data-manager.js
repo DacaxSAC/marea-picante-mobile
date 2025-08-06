@@ -1,0 +1,263 @@
+// Manejador de datos para Marea Picante
+import { ApiService } from './api-service.js';
+import { CONFIG } from './config.js';
+
+export class DataManager {
+    constructor() {
+        this.apiService = new ApiService();
+        this.data = {
+            tables: [],
+            categories: [],
+            products: {},
+            allProducts: [],
+            orders: [],
+            currentScreen: CONFIG.DEFAULT_SCREEN,
+            currentStep: CONFIG.DEFAULT_STEP,
+            selectedTables: [],
+            selectedProducts: new Map(),
+            currentCategory: null,
+            currentCategoryId: null
+        };
+    }
+
+    // Getters para acceder a los datos
+    get tables() { return this.data.tables; }
+    get categories() { return this.data.categories; }
+    get products() { return this.data.products; }
+    get allProducts() { return this.data.allProducts; }
+    get orders() { return this.data.orders; }
+    get currentScreen() { return this.data.currentScreen; }
+    get currentStep() { return this.data.currentStep; }
+    get selectedTables() { return this.data.selectedTables; }
+    get selectedProducts() { return this.data.selectedProducts; }
+    get currentCategory() { return this.data.currentCategory; }
+    get currentCategoryId() { return this.data.currentCategoryId; }
+
+    // Setters para modificar los datos
+    setCurrentScreen(screen) { this.data.currentScreen = screen; }
+    setCurrentStep(step) { this.data.currentStep = step; }
+    setCurrentCategory(category, categoryId = null) {
+        this.data.currentCategory = category;
+        this.data.currentCategoryId = categoryId;
+    }
+
+    // Cargar mesas desde la API
+    async loadTables() {
+        try {
+            this.data.tables = await this.apiService.loadTables();
+            console.log('Mesas cargadas desde la API:', this.data.tables);
+            return true;
+        } catch (error) {
+            console.error('Error al cargar las mesas:', error);
+            this.loadDefaultTables();
+            return false;
+        }
+    }
+
+    // Cargar mesas por defecto
+    loadDefaultTables() {
+        this.data.tables = [];
+    }
+
+    // Cargar categorías desde la API
+    async loadCategories() {
+        try {
+            this.data.categories = await this.apiService.loadCategories();
+            console.log('Categorías cargadas desde la API:', this.data.categories);
+            
+            // Establecer la primera categoría como activa
+            if (this.data.categories.length > 0) {
+                this.data.currentCategory = this.data.categories[0].key || this.data.categories[0].name.toLowerCase();
+                this.data.currentCategoryId = this.data.categories[0].id || this.data.categories[0].categoryId || 1;
+            }
+            return true;
+        } catch (error) {
+            console.error('Error al cargar las categorías:', error);
+            this.loadDefaultCategories();
+            return false;
+        }
+    }
+
+    // Cargar categorías por defecto
+    loadDefaultCategories() {
+        this.data.categories = Object.keys(this.data.products).map((key, index) => {
+            const category = {
+                id: index + 1,
+                categoryId: index + 1,
+                key: key,
+                name: this.capitalizeFirst(key)
+            };
+            return category;
+        });
+        
+        // Establecer la primera categoría como activa
+        if (this.data.categories.length > 0) {
+            this.data.currentCategory = this.data.categories[0].key;
+            this.data.currentCategoryId = this.data.categories[0].categoryId;
+        }
+    }
+
+    // Cargar productos desde la API
+    async loadProducts() {
+        try {
+            this.data.allProducts = await this.apiService.loadProducts();
+            console.log('Productos cargados desde la API:', this.data.allProducts);
+            return true;
+        } catch (error) {
+            console.error('Error al cargar los productos:', error);
+            this.loadDefaultProducts();
+            return false;
+        }
+    }
+
+    // Cargar productos por defecto
+    loadDefaultProducts() {
+        this.data.allProducts = [];
+        Object.keys(this.data.products).forEach(categoryKey => {
+            this.data.products[categoryKey].forEach(product => {
+                this.data.allProducts.push({
+                    ...product,
+                    categoryId: this.getCategoryIdByKey(categoryKey),
+                    categoryKey: categoryKey
+                });
+            });
+        });
+    }
+
+    // Obtener ID de categoría por clave
+    getCategoryIdByKey(key) {
+        const category = this.data.categories.find(cat => cat.key === key);
+        return category ? category.categoryId : 1;
+    }
+
+    // Buscar producto por ID
+    findProductById(productId) {
+        // Buscar primero en allProducts (desde API)
+        if (this.data.allProducts.length > 0) {
+            return this.data.allProducts.find(product => product.id === productId);
+        }
+        
+        // Fallback: buscar en productos locales
+        for (const category in this.data.products) {
+            const product = this.data.products[category].find(p => p.id === productId);
+            if (product) {
+                return product;
+            }
+        }
+        return null;
+    }
+
+    // Obtener productos por categoría
+    getProductsByCategory(categoryId) {
+        if (this.data.allProducts.length > 0) {
+            return this.data.allProducts.filter(product => product.categoryId === categoryId);
+        }
+        
+        // Fallback a productos locales
+        return this.data.products[this.data.currentCategory] || [];
+    }
+
+    // Manejar selección de mesa
+    toggleTableSelection(tableNumber) {
+        const index = this.data.selectedTables.indexOf(tableNumber);
+        if (index > -1) {
+            this.data.selectedTables.splice(index, 1);
+        } else {
+            this.data.selectedTables.push(tableNumber);
+        }
+    }
+
+    // Actualizar cantidad de producto
+    updateProductQuantity(productId, change) {
+        const currentQuantity = this.data.selectedProducts.get(productId) || 0;
+        const newQuantity = Math.max(0, currentQuantity + change);
+        
+        if (newQuantity === 0) {
+            this.data.selectedProducts.delete(productId);
+        } else {
+            this.data.selectedProducts.set(productId, newQuantity);
+        }
+    }
+
+    // Crear orden
+    createOrder() {
+        const orderItems = [];
+        let total = 0;
+        
+        this.data.selectedProducts.forEach((quantity, productId) => {
+            const product = this.findProductById(productId);
+            if (product) {
+                const subtotal = product.price * quantity;
+                orderItems.push({
+                    productId: product.id,
+                    name: product.name,
+                    price: product.price,
+                    quantity: quantity,
+                    subtotal: subtotal
+                });
+                total += subtotal;
+            }
+        });
+        
+        const order = {
+            id: Date.now(),
+            tables: [...this.data.selectedTables],
+            items: orderItems,
+            total: total,
+            timestamp: new Date(),
+            status: 'pending'
+        };
+        
+        this.data.orders.push(order);
+        this.saveOrders();
+        return order;
+    }
+
+    // Eliminar orden
+    deleteOrder(orderId) {
+        const index = this.data.orders.findIndex(order => order.id === orderId);
+        if (index > -1) {
+            this.data.orders.splice(index, 1);
+            this.saveOrders();
+            return true;
+        }
+        return false;
+    }
+
+    // Resetear nueva orden
+    resetNewOrder() {
+        this.data.selectedTables = [];
+        this.data.selectedProducts.clear();
+        this.data.currentStep = CONFIG.DEFAULT_STEP;
+    }
+
+    // Guardar órdenes en localStorage
+    saveOrders() {
+        try {
+            localStorage.setItem('marea-picante-orders', JSON.stringify(this.data.orders));
+        } catch (error) {
+            console.error('Error al guardar órdenes:', error);
+        }
+    }
+
+    // Cargar órdenes desde localStorage
+    loadOrders() {
+        try {
+            const savedOrders = localStorage.getItem('marea-picante-orders');
+            if (savedOrders) {
+                this.data.orders = JSON.parse(savedOrders).map(order => ({
+                    ...order,
+                    timestamp: new Date(order.timestamp)
+                }));
+            }
+        } catch (error) {
+            console.error('Error al cargar órdenes:', error);
+            this.data.orders = [];
+        }
+    }
+
+    // Función auxiliar para capitalizar
+    capitalizeFirst(str) {
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+}

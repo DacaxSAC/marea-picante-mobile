@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Gestión de órdenes para restaurante - App móvil">
     <meta name="theme-color" content="#2196F3">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Marea Picante">
     
@@ -28,7 +28,7 @@
         </div>
 
         <!-- Main app container -->
-        <div id="main-app" class="mobile-app" style="display: none;">
+        <div id="main-app" class="mobile-app">
             <!-- Header -->
             <header class="mobile-header">
                 <h1>Marea Picante</h1>
@@ -66,10 +66,7 @@
                             <h3>Seleccionar Productos</h3>
                         </div>
                         <div class="products-categories">
-                            <button class="category-btn active" data-category="entradas">Entradas</button>
-                            <button class="category-btn" data-category="principales">Principales</button>
-                            <button class="category-btn" data-category="bebidas">Bebidas</button>
-                            <button class="category-btn" data-category="postres">Postres</button>
+                            <!-- Las categorías se cargarán dinámicamente -->
                         </div>
                         <div id="products-grid" class="products-grid">
                             <!-- Products will be loaded here -->
@@ -154,6 +151,6 @@
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <script type="module" src="js/app.js"></script>
 </body>
 </html>
