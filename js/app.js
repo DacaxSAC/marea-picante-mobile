@@ -163,7 +163,7 @@ export class MobileApp {
 
     // Manejar acción de continuar
     handleContinueAction() {
-        if (this.dataManager.currentStep === 'table') {
+        if (this.dataManager.currentStep === 'tables') {
             if (this.dataManager.selectedTables.length > 0) {
                 this.uiManager.goToStep('products');
             }
@@ -205,7 +205,7 @@ export class MobileApp {
     // Resetear nueva orden
     resetNewOrder() {
         this.dataManager.resetNewOrder();
-        this.uiManager.goToStep('table');
+        this.uiManager.goToStep('tables');
         this.uiManager.switchScreen('new-order');
         this.uiManager.renderTables();
         this.uiManager.renderProducts();

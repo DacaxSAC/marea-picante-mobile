@@ -45,7 +45,7 @@ export class UIManager {
             step.classList.remove('active');
         });
         
-        const targetStep = document.querySelector(`.${stepName}-step`);
+        const targetStep = document.getElementById(`step-${stepName}`);
         if (targetStep) {
             targetStep.classList.add('active');
             this.dataManager.setCurrentStep(stepName);
@@ -122,7 +122,6 @@ export class UIManager {
             categoryBtn.textContent = category.displayName || category.name;
             
             categoryBtn.addEventListener('click', (e) => {
-                debugger
                 const categoryKey = e.currentTarget.dataset.category;
                 const categoryId = parseInt(e.currentTarget.dataset.categoryId);
                 this.selectCategory(categoryKey, categoryId);
@@ -134,10 +133,8 @@ export class UIManager {
 
     // Seleccionar categoría
     selectCategory(category, categoryId = null) {
-        debugger
         // Actualizar botones de categoría
         document.querySelectorAll('.category-btn').forEach(btn => {
-            debugger
             btn.classList.remove('active');
         });
         
@@ -168,18 +165,17 @@ export class UIManager {
             const productCard = document.createElement('div');
             productCard.className = 'product-card';
             
-            const quantity = this.dataManager.selectedProducts.get(product.id) || 0;
+            const quantity = this.dataManager.selectedProducts.get(product.productId) || 0;
             
             productCard.innerHTML = `
                 <div class="product-info">
                     <h3 class="product-name">${product.name}</h3>
-                    <p class="product-description">${product.description}</p>
                     <div class="product-price">S/ ${product.pricePersonal.toFixed(2)}</div>
                 </div>
                 <div class="product-controls">
-                    <button class="quantity-btn minus" data-product-id="${product.id}" data-change="-1">-</button>
+                    <button class="quantity-btn minus" data-product-id="${product.productId}" data-change="-1">-</button>
                     <span class="quantity">${quantity}</span>
-                    <button class="quantity-btn plus" data-product-id="${product.id}" data-change="1">+</button>
+                    <button class="quantity-btn plus" data-product-id="${product.productId}" data-change="1">+</button>
                 </div>
             `;
             
@@ -188,7 +184,6 @@ export class UIManager {
         
         // Agregar event listeners para los botones de cantidad
         productsGrid.addEventListener('click', (e) => {
-            debugger
             if (e.target.classList.contains('quantity-btn')) {
                 const productId = parseInt(e.target.dataset.productId);
                 const change = parseInt(e.target.dataset.change);
@@ -199,8 +194,18 @@ export class UIManager {
 
     // Actualizar cantidad de producto
     updateProductQuantity(productId, change) {
+        console.log('updateProductQuantity llamado con:', productId, change);
         this.dataManager.updateProductQuantity(productId, change);
-        this.renderProducts();
+        console.log('Productos seleccionados después del cambio:', this.dataManager.selectedProducts);
+        
+        // Solo actualizar la cantidad mostrada en el producto específico
+        const productCard = document.querySelector(`[data-product-id="${productId}"]`).closest('.product-card');
+        if (productCard) {
+            const quantitySpan = productCard.querySelector('.quantity');
+            const newQuantity = this.dataManager.selectedProducts.get(productId) || 0;
+            quantitySpan.textContent = newQuantity;
+        }
+        
         this.updateContinueButton();
         this.updateOrderPreview();
     }
@@ -209,7 +214,11 @@ export class UIManager {
     updateContinueButton() {
         const continueBtn = document.querySelector('.continue-btn');
         if (continueBtn) {
+            console.log('updateContinueButton - selectedTables.length:', this.dataManager.selectedTables.length);
+            console.log('updateContinueButton - selectedProducts.size:', this.dataManager.selectedProducts.size);
             const hasSelection = this.dataManager.selectedTables.length > 0 || this.dataManager.selectedProducts.size > 0;
+            console.log('updateContinueButton - hasSelection:', hasSelection);
+            console.log('updateContinueButton - botón disabled será:', !hasSelection);
             continueBtn.disabled = !hasSelection;
         }
     }
@@ -230,8 +239,11 @@ export class UIManager {
         this.dataManager.selectedProducts.forEach((quantity, productId) => {
             const product = this.dataManager.findProductById(productId);
             if (product) {
-                const subtotal = product.price * quantity;
+                console.log('Producto encontrado:', product.name, 'Precio:', product.pricePersonal, 'Cantidad:', quantity);
+                const subtotal = product.pricePersonal * quantity;
+                console.log('Subtotal calculado:', subtotal);
                 total += subtotal;
+                console.log('Total acumulado:', total);
                 
                 itemsHtml += `
                     <div class="order-item">

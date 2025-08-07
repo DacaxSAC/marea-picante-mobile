@@ -230,11 +230,11 @@ export class DataManager {
         this.data.selectedProducts.forEach((quantity, productId) => {
             const product = this.findProductById(productId);
             if (product) {
-                const subtotal = product.price * quantity;
+                const subtotal = product.pricePersonal * quantity;
                 orderItems.push({
                     productId: product.id,
                     name: product.name,
-                    price: product.price,
+                    price: product.pricePersonal,
                     quantity: quantity,
                     subtotal: subtotal
                 });

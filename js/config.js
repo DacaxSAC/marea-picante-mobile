@@ -5,7 +5,7 @@ export const CONFIG = {
     
     // Default values
     DEFAULT_SCREEN: 'new-order',
-    DEFAULT_STEP: 'table',
+    DEFAULT_STEP: 'tables',
     
     // UI Messages
     MESSAGES: {
