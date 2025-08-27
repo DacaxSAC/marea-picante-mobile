@@ -22,7 +22,7 @@ export class UIManager {
         });
         
         // Mostrar la pantalla seleccionada
-        const targetScreen = document.querySelector(`.${screenName}-screen`);
+        const targetScreen = document.querySelector(`#${screenName}-screen`);
         if (targetScreen) {
             targetScreen.classList.add('active');
             this.dataManager.setCurrentScreen(screenName);

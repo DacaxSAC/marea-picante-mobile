@@ -78,6 +78,7 @@ export class MobileApp {
         document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', (e) => {
                 const screen = e.currentTarget.dataset.screen;
+                
                 if (screen) {
                     this.uiManager.switchScreen(screen);
                 }
