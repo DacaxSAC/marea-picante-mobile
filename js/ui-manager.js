@@ -159,7 +159,11 @@ export class UIManager {
             return;
         }
         
-        productsGrid.innerHTML = '';
+        // Remover event listeners anteriores clonando el elemento
+        const newProductsGrid = productsGrid.cloneNode(false);
+        productsGrid.parentNode.replaceChild(newProductsGrid, productsGrid);
+        
+        newProductsGrid.innerHTML = '';
         
         products.forEach(product => {
             const productCard = document.createElement('div');
@@ -231,11 +235,11 @@ export class UIManager {
                 </div>
             `;
             
-            productsGrid.appendChild(productCard);
+            newProductsGrid.appendChild(productCard);
         });
         
         // Agregar event listeners para los botones de cantidad
-        productsGrid.addEventListener('click', (e) => {
+        newProductsGrid.addEventListener('click', (e) => {
             if (e.target.classList.contains('quantity-btn')) {
                 const productId = parseInt(e.target.dataset.productId);
                 const change = parseInt(e.target.dataset.change);
@@ -266,14 +270,21 @@ export class UIManager {
 
     // Actualizar botón continuar
     updateContinueButton() {
-        const continueBtn = document.querySelector('.continue-btn');
+        const currentStep = this.dataManager.currentStep;
+        const continueBtn = document.querySelector(`#step-${currentStep} .continue-btn`);
+        
         if (continueBtn) {
-            console.log('updateContinueButton - selectedTables.length:', this.dataManager.selectedTables.length);
-            console.log('updateContinueButton - selectedProducts.size:', this.dataManager.selectedProducts.size);
-            const hasSelection = this.dataManager.selectedTables.length > 0 || this.dataManager.selectedProducts.size > 0;
-            console.log('updateContinueButton - hasSelection:', hasSelection);
-            console.log('updateContinueButton - botón disabled será:', !hasSelection);
-            continueBtn.disabled = !hasSelection;
+            let shouldEnable = false;
+            
+            if (currentStep === 'tables') {
+                // En el paso de mesas, habilitar si hay mesas seleccionadas
+                shouldEnable = this.dataManager.selectedTables.length > 0;
+            } else if (currentStep === 'products') {
+                // En el paso de productos, habilitar si hay productos seleccionados
+                shouldEnable = this.dataManager.selectedProducts.size > 0;
+            }
+            
+            continueBtn.disabled = !shouldEnable;
         }
     }
 

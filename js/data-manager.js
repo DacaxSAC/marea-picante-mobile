@@ -177,12 +177,12 @@ export class DataManager {
     findProductById(productId) {
         // Buscar primero en allProducts (desde API)
         if (this.data.allProducts.length > 0) {
-            return this.data.allProducts.find(product => product.id === productId);
+            return this.data.allProducts.find(product => product.productId === productId || product.id === productId);
         }
         
         // Fallback: buscar en productos locales
         for (const category in this.data.products) {
-            const product = this.data.products[category].find(p => p.id === productId);
+            const product = this.data.products[category].find(p => p.productId === productId || p.id === productId);
             if (product) {
                 return product;
             }
@@ -254,7 +254,7 @@ export class DataManager {
                 if (quantities.personal > 0) {
                     const subtotal = product.pricePersonal * quantities.personal;
                     orderItems.push({
-                        productId: product.id,
+                        productId: product.productId || product.id,
                         name: product.name + ' (Personal)',
                         price: product.pricePersonal,
                         quantity: quantities.personal,
@@ -268,7 +268,7 @@ export class DataManager {
                 if (quantities.fuente > 0) {
                     const subtotal = product.priceFuente * quantities.fuente;
                     orderItems.push({
-                        productId: product.id,
+                        productId: product.productId || product.id,
                         name: product.name + ' (Fuente)',
                         price: product.priceFuente,
                         quantity: quantities.fuente,
