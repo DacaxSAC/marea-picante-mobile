@@ -127,6 +127,29 @@ export class MobileApp {
             });
         }
 
+        // Botones de navegación hacia atrás
+        const backToTableBtn = document.getElementById('back-to-table');
+        if (backToTableBtn) {
+            backToTableBtn.addEventListener('click', () => {
+                this.uiManager.goToStep('tables');
+            });
+        }
+
+        const backToProductsBtn = document.getElementById('back-to-products');
+        if (backToProductsBtn) {
+            backToProductsBtn.addEventListener('click', () => {
+                this.uiManager.goToStep('products');
+            });
+        }
+
+        // Botón crear orden en el paso de preview
+        const createOrderPreviewBtn = document.getElementById('create-order');
+        if (createOrderPreviewBtn) {
+            createOrderPreviewBtn.addEventListener('click', () => {
+                this.createOrder();
+            });
+        }
+
         // Event listeners para órdenes
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('btn-view')) {
@@ -170,7 +193,7 @@ export class MobileApp {
             }
         } else if (this.dataManager.currentStep === 'products') {
             if (this.dataManager.selectedProducts.size > 0) {
-                this.uiManager.goToStep('review');
+                this.uiManager.goToStep('preview');
                 this.uiManager.updateOrderPreview();
             }
         }

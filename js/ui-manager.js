@@ -279,16 +279,37 @@ export class UIManager {
 
     // Actualizar vista previa de orden
     updateOrderPreview() {
+        // Actualizar el preview en el paso de productos
         const orderPreview = document.querySelector('.order-preview');
-        if (!orderPreview) return;
-        
-        if (this.dataManager.selectedProducts.size === 0) {
-            orderPreview.innerHTML = '<div class="empty-order">No hay productos seleccionados</div>';
-            return;
+        if (orderPreview) {
+            this.updateOrderPreviewContent(orderPreview);
         }
         
+        // Actualizar el resumen en el paso preview
+        const orderItems = document.getElementById('order-items');
+        const orderTotal = document.getElementById('order-total');
+        const selectedTable = document.getElementById('selected-table');
+        
+        if (orderItems && orderTotal) {
+            const { itemsHtml, total } = this.generateOrderSummary();
+            orderItems.innerHTML = itemsHtml;
+            orderTotal.textContent = total.toFixed(2);
+        }
+        
+        if (selectedTable) {
+            const tables = this.dataManager.selectedTables.join(', ');
+            selectedTable.textContent = tables || '-';
+        }
+    }
+    
+    // Generar resumen de orden
+    generateOrderSummary() {
         let total = 0;
         let itemsHtml = '';
+        
+        if (this.dataManager.selectedProducts.size === 0) {
+            return { itemsHtml: '<div class="empty-order">No hay productos seleccionados</div>', total: 0 };
+        }
         
         this.dataManager.selectedProducts.forEach((quantities, productId) => {
             const product = this.dataManager.findProductById(productId);
@@ -322,6 +343,13 @@ export class UIManager {
                 }
             }
         });
+        
+        return { itemsHtml, total };
+    }
+    
+    // Actualizar contenido del preview en el paso de productos
+    updateOrderPreviewContent(orderPreview) {
+        const { itemsHtml, total } = this.generateOrderSummary();
         
         orderPreview.innerHTML = `
             <div class="order-items">${itemsHtml}</div>
