@@ -14,7 +14,7 @@ export class DataManager {
             currentScreen: CONFIG.DEFAULT_SCREEN,
             currentStep: CONFIG.DEFAULT_STEP,
             selectedTables: [],
-            selectedProducts: new Map(),
+            selectedProducts: new Map(), // Estructura: productId -> { personal: quantity, fuente: quantity }
             currentCategory: null,
             currentCategoryId: null
         };
@@ -211,15 +211,35 @@ export class DataManager {
     }
 
     // Actualizar cantidad de producto
-    updateProductQuantity(productId, change) {
-        const currentQuantity = this.data.selectedProducts.get(productId) || 0;
-        const newQuantity = Math.max(0, currentQuantity + change);
+    updateProductQuantity(productId, change, priceType = 'personal') {
+        // Obtener o crear el objeto de cantidades para este producto
+        let productQuantities = this.data.selectedProducts.get(productId) || { personal: 0, fuente: 0 };
         
-        if (newQuantity === 0) {
+        // Actualizar la cantidad específica del tipo de precio
+        const currentQuantity = productQuantities[priceType] || 0;
+        const newQuantity = Math.max(0, currentQuantity + change);
+        productQuantities[priceType] = newQuantity;
+        
+        // Si ambas cantidades son 0, eliminar el producto
+        if (productQuantities.personal === 0 && productQuantities.fuente === 0) {
             this.data.selectedProducts.delete(productId);
         } else {
-            this.data.selectedProducts.set(productId, newQuantity);
+            this.data.selectedProducts.set(productId, productQuantities);
         }
+    }
+
+    // Obtener cantidad de un producto por tipo de precio
+    getProductQuantity(productId, priceType = 'personal') {
+        const productQuantities = this.data.selectedProducts.get(productId);
+        if (!productQuantities) return 0;
+        return productQuantities[priceType] || 0;
+    }
+
+    // Obtener cantidad total de un producto (ambos tipos)
+    getTotalProductQuantity(productId) {
+        const productQuantities = this.data.selectedProducts.get(productId);
+        if (!productQuantities) return 0;
+        return (productQuantities.personal || 0) + (productQuantities.fuente || 0);
     }
 
     // Crear orden
@@ -227,18 +247,36 @@ export class DataManager {
         const orderItems = [];
         let total = 0;
         
-        this.data.selectedProducts.forEach((quantity, productId) => {
+        this.data.selectedProducts.forEach((quantities, productId) => {
             const product = this.findProductById(productId);
             if (product) {
-                const subtotal = product.pricePersonal * quantity;
-                orderItems.push({
-                    productId: product.id,
-                    name: product.name,
-                    price: product.pricePersonal,
-                    quantity: quantity,
-                    subtotal: subtotal
-                });
-                total += subtotal;
+                // Agregar item para precio personal si hay cantidad
+                if (quantities.personal > 0) {
+                    const subtotal = product.pricePersonal * quantities.personal;
+                    orderItems.push({
+                        productId: product.id,
+                        name: product.name + ' (Personal)',
+                        price: product.pricePersonal,
+                        quantity: quantities.personal,
+                        subtotal: subtotal,
+                        priceType: 'personal'
+                    });
+                    total += subtotal;
+                }
+                
+                // Agregar item para precio fuente si hay cantidad
+                if (quantities.fuente > 0) {
+                    const subtotal = product.priceFuente * quantities.fuente;
+                    orderItems.push({
+                        productId: product.id,
+                        name: product.name + ' (Fuente)',
+                        price: product.priceFuente,
+                        quantity: quantities.fuente,
+                        subtotal: subtotal,
+                        priceType: 'fuente'
+                    });
+                    total += subtotal;
+                }
             }
         });
         

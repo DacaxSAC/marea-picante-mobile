@@ -1,9 +1,10 @@
 // Configuración de la aplicación Marea Picante
 export const CONFIG = {
     // API Configuration
-    API_BASE_URL: 'https://marea-picante-backend.onrender.com/api',
+    // API_BASE_URL: 'https://marea-picante-backend.onrender.com/api',
+    API_BASE_URL: 'http://localhost:4000/api',
     
-    // Default values
+    // Default valuess
     DEFAULT_SCREEN: 'new-order',
     DEFAULT_STEP: 'tables',
     

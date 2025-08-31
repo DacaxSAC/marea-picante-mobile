@@ -167,15 +167,67 @@ export class UIManager {
             
             const quantity = this.dataManager.selectedProducts.get(product.productId) || 0;
             
+            // Determinar qué precios mostrar
+            const hasPersonalPrice = product.pricePersonal && product.pricePersonal > 0;
+            const hasFuentePrice = product.priceFuente && product.priceFuente > 0;
+            
+            // Obtener cantidades por tipo de precio
+            const personalQuantity = this.dataManager.getProductQuantity(product.productId, 'personal');
+            const fuenteQuantity = this.dataManager.getProductQuantity(product.productId, 'fuente');
+            
+            let priceHTML = '';
+            if (hasPersonalPrice && hasFuentePrice) {
+                // Mostrar ambos precios con controles separados
+                priceHTML = `
+                        <div class="price-option">
+                            <div class="price-info">
+                                <span class="price-label">Personal:</span>
+                                <span class="price-value">S/ ${product.pricePersonal.toFixed(2)}</span>
+                            </div>
+                            <div class="price-controls">
+                                <button class="quantity-btn minus" data-product-id="${product.productId}" data-price-type="personal" data-change="-1">-</button>
+                                <span class="quantity">${personalQuantity}</span>
+                                <button class="quantity-btn plus" data-product-id="${product.productId}" data-price-type="personal" data-change="1">+</button>
+                            </div>
+                        </div>
+                        <div class="price-option">
+                            <div class="price-info">
+                                <span class="price-label">Fuente:</span>
+                                <span class="price-value">S/ ${product.priceFuente.toFixed(2)}</span>
+                            </div>
+                            <div class="price-controls">
+                                <button class="quantity-btn minus" data-product-id="${product.productId}" data-price-type="fuente" data-change="-1">-</button>
+                                <span class="quantity">${fuenteQuantity}</span>
+                                <button class="quantity-btn plus" data-product-id="${product.productId}" data-price-type="fuente" data-change="1">+</button>
+                            </div>
+                        </div>
+                `;
+            } else if (hasPersonalPrice) {
+                priceHTML = `
+                    <div class="product-price">S/ ${product.pricePersonal.toFixed(2)}</div>
+                    <div class="product-controls">
+                        <button class="quantity-btn minus" data-product-id="${product.productId}" data-price-type="personal" data-change="-1">-</button>
+                        <span class="quantity">${personalQuantity}</span>
+                        <button class="quantity-btn plus" data-product-id="${product.productId}" data-price-type="personal" data-change="1">+</button>
+                    </div>
+                `;
+            } else if (hasFuentePrice) {
+                priceHTML = `
+                    <div class="product-price">S/ ${product.priceFuente.toFixed(2)}</div>
+                    <div class="product-controls">
+                        <button class="quantity-btn minus" data-product-id="${product.productId}" data-price-type="fuente" data-change="-1">-</button>
+                        <span class="quantity">${fuenteQuantity}</span>
+                        <button class="quantity-btn plus" data-product-id="${product.productId}" data-price-type="fuente" data-change="1">+</button>
+                    </div>
+                `;
+            } else {
+                priceHTML = `<div class="product-price">Precio no disponible</div>`;
+            }
+            
             productCard.innerHTML = `
                 <div class="product-info">
                     <h3 class="product-name">${product.name}</h3>
-                    <div class="product-price">S/ ${product.pricePersonal.toFixed(2)}</div>
-                </div>
-                <div class="product-controls">
-                    <button class="quantity-btn minus" data-product-id="${product.productId}" data-change="-1">-</button>
-                    <span class="quantity">${quantity}</span>
-                    <button class="quantity-btn plus" data-product-id="${product.productId}" data-change="1">+</button>
+                    ${priceHTML}
                 </div>
             `;
             
@@ -187,22 +239,24 @@ export class UIManager {
             if (e.target.classList.contains('quantity-btn')) {
                 const productId = parseInt(e.target.dataset.productId);
                 const change = parseInt(e.target.dataset.change);
-                this.updateProductQuantity(productId, change);
+                const priceType = e.target.dataset.priceType || 'personal';
+                this.updateProductQuantity(productId, change, priceType);
             }
         });
     }
 
     // Actualizar cantidad de producto
-    updateProductQuantity(productId, change) {
-        console.log('updateProductQuantity llamado con:', productId, change);
-        this.dataManager.updateProductQuantity(productId, change);
+    updateProductQuantity(productId, change, priceType = 'personal') {
+        console.log('updateProductQuantity llamado con:', productId, change, priceType);
+        this.dataManager.updateProductQuantity(productId, change, priceType);
         console.log('Productos seleccionados después del cambio:', this.dataManager.selectedProducts);
         
-        // Solo actualizar la cantidad mostrada en el producto específico
-        const productCard = document.querySelector(`[data-product-id="${productId}"]`).closest('.product-card');
-        if (productCard) {
-            const quantitySpan = productCard.querySelector('.quantity');
-            const newQuantity = this.dataManager.selectedProducts.get(productId) || 0;
+        // Solo actualizar la cantidad mostrada en el producto específico y tipo de precio
+        const button = document.querySelector(`[data-product-id="${productId}"][data-price-type="${priceType}"]`);
+        if (button) {
+            const productCard = button.closest('.product-card');
+            const quantitySpan = button.parentElement.querySelector('.quantity');
+            const newQuantity = this.dataManager.getProductQuantity(productId, priceType);
             quantitySpan.textContent = newQuantity;
         }
         
@@ -236,22 +290,36 @@ export class UIManager {
         let total = 0;
         let itemsHtml = '';
         
-        this.dataManager.selectedProducts.forEach((quantity, productId) => {
+        this.dataManager.selectedProducts.forEach((quantities, productId) => {
             const product = this.dataManager.findProductById(productId);
             if (product) {
-                console.log('Producto encontrado:', product.name, 'Precio:', product.pricePersonal, 'Cantidad:', quantity);
-                const subtotal = product.pricePersonal * quantity;
-                console.log('Subtotal calculado:', subtotal);
-                total += subtotal;
-                console.log('Total acumulado:', total);
+                // Agregar item para precio personal si hay cantidad
+                if (quantities.personal > 0) {
+                    const subtotal = product.pricePersonal * quantities.personal;
+                    total += subtotal;
+                    
+                    itemsHtml += `
+                        <div class="order-item">
+                            <span class="item-name">${product.name} (Personal)</span>
+                            <span class="item-quantity">x${quantities.personal}</span>
+                            <span class="item-price">S/ ${subtotal.toFixed(2)}</span>
+                        </div>
+                    `;
+                }
                 
-                itemsHtml += `
-                    <div class="order-item">
-                        <span class="item-name">${product.name}</span>
-                        <span class="item-quantity">x${quantity}</span>
-                        <span class="item-price">S/ ${subtotal.toFixed(2)}</span>
-                    </div>
-                `;
+                // Agregar item para precio fuente si hay cantidad
+                if (quantities.fuente > 0) {
+                    const subtotal = product.priceFuente * quantities.fuente;
+                    total += subtotal;
+                    
+                    itemsHtml += `
+                        <div class="order-item">
+                            <span class="item-name">${product.name} (Fuente)</span>
+                            <span class="item-quantity">x${quantities.fuente}</span>
+                            <span class="item-price">S/ ${subtotal.toFixed(2)}</span>
+                        </div>
+                    `;
+                }
             }
         });
         
