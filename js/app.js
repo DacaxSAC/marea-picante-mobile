@@ -15,11 +15,11 @@ export class MobileApp {
 
     async init() {
         try {
-            // Cargar datos guardados
-            this.dataManager.loadOrders();
-            
             // Cargar datos desde la API
             await this.loadAllData();
+            
+            // Cargar órdenes desde el backend
+            await this.dataManager.loadOrders();
             
             // Configurar eventos
             this.setupEventListeners();
@@ -76,11 +76,17 @@ export class MobileApp {
     setupEventListeners() {
         // Navegación inferior
         document.querySelectorAll('.nav-item').forEach(item => {
-            item.addEventListener('click', (e) => {
+            item.addEventListener('click', async (e) => {
                 const screen = e.currentTarget.dataset.screen;
                 
                 if (screen) {
                     this.uiManager.switchScreen(screen);
+                    
+                    // Cargar órdenes cuando se navega a la pantalla de órdenes
+                    if (screen === 'orders') {
+                        await this.dataManager.loadOrders();
+                        this.uiManager.updateOrdersDisplay();
+                    }
                 }
             });
         });
@@ -119,7 +125,7 @@ export class MobileApp {
         }
 
         // Botón refresh
-        const refreshBtn = document.querySelector('.refresh-btn');
+        const refreshBtn = document.querySelector('#refresh-btn');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', () => {
                 this.refreshApp();
@@ -203,11 +209,13 @@ export class MobileApp {
     }
 
     // Crear orden
-    createOrder() {
+    async createOrder() {
         try {
-            const order = this.dataManager.createOrder();
+            const order = await this.dataManager.createOrder();
             this.uiManager.showSuccess(CONFIG.MESSAGES.ORDER_CREATED);
             this.resetNewOrder();
+            // Recargar órdenes desde el backend
+            await this.dataManager.loadOrders();
             this.uiManager.updateOrdersDisplay();
             this.uiManager.switchScreen('orders');
         } catch (error) {
@@ -217,9 +225,9 @@ export class MobileApp {
     }
 
     // Eliminar orden
-    deleteOrder(orderId) {
+    async deleteOrder(orderId) {
         if (confirm('¿Estás seguro de que quieres eliminar esta orden?')) {
-            const success = this.dataManager.deleteOrder(orderId);
+            const success = await this.dataManager.deleteOrder(orderId);
             if (success) {
                 this.uiManager.showSuccess(CONFIG.MESSAGES.ORDER_DELETED);
                 this.uiManager.updateOrdersDisplay();
@@ -242,7 +250,14 @@ export class MobileApp {
     // Refrescar aplicación
     async refreshApp() {
         try {
+            // Cargar todos los datos incluyendo órdenes
             await this.loadAllData();
+            await this.dataManager.loadOrders();
+            
+            // Actualizar la UI
+            this.uiManager.renderProducts();
+            this.uiManager.updateOrdersDisplay();
+            
             this.uiManager.showSuccess('Datos actualizados correctamente');
         } catch (error) {
             console.error('Error al refrescar:', error);

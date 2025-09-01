@@ -389,7 +389,7 @@ export class UIManager {
                 <div class="order-header">
                     <span class="order-id">#${order.id}</span>
                     <span class="order-tables">Mesa(s): ${order.tables.join(', ')}</span>
-                    <span class="order-total">S/ ${order.total.toFixed(2)}</span>
+                    <span class="order-total">S/ ${Number(order.total).toFixed(2)}</span>
                 </div>
                 <div class="order-time">${this.formatDateTime(order.timestamp)}</div>
                 <div class="order-actions">

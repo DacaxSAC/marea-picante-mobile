@@ -243,7 +243,7 @@ export class DataManager {
     }
 
     // Crear orden
-    createOrder() {
+    async createOrder() {
         const orderItems = [];
         let total = 0;
         
@@ -256,7 +256,7 @@ export class DataManager {
                     orderItems.push({
                         productId: product.productId || product.id,
                         name: product.name + ' (Personal)',
-                        price: product.pricePersonal,
+                        unitPrice: product.pricePersonal,
                         quantity: quantities.personal,
                         subtotal: subtotal,
                         priceType: 'personal'
@@ -270,7 +270,7 @@ export class DataManager {
                     orderItems.push({
                         productId: product.productId || product.id,
                         name: product.name + ' (Fuente)',
-                        price: product.priceFuente,
+                        unitPrice: product.priceFuente,
                         quantity: quantities.fuente,
                         subtotal: subtotal,
                         priceType: 'fuente'
@@ -289,9 +289,31 @@ export class DataManager {
             status: 'pending'
         };
         
-        this.data.orders.push(order);
-        this.saveOrders();
-        return order;
+        // Log para ver la estructura de la orden antes de enviarla al backend
+        console.log('📋 Orden estructurada lista para enviar al backend:', {
+            orderData: order,
+            selectedTables: [...this.data.selectedTables],
+            selectedProducts: Object.fromEntries(this.data.selectedProducts),
+            totalItems: orderItems.length,
+            totalAmount: total
+        });
+        debugger
+        try {
+            // Enviar orden al backend
+            const backendResponse = await this.apiService.createOrder(order);
+            console.log('✅ Respuesta del backend:', backendResponse);
+            
+            // Guardar orden localmente solo si se envió exitosamente al backend
+            this.data.orders.push(order);
+            this.saveOrders();
+            return order;
+        } catch (error) {
+            console.error('❌ Error al enviar orden al backend:', error);
+            // Aún así guardar localmente para no perder la orden
+            this.data.orders.push(order);
+            this.saveOrders();
+            throw error;
+        }
     }
 
     // Eliminar orden
@@ -322,17 +344,15 @@ export class DataManager {
     }
 
     // Cargar órdenes desde localStorage
-    loadOrders() {
+    async loadOrders() {
         try {
-            const savedOrders = localStorage.getItem('marea-picante-orders');
-            if (savedOrders) {
-                this.data.orders = JSON.parse(savedOrders).map(order => ({
-                    ...order,
-                    timestamp: new Date(order.timestamp)
-                }));
-            }
+            const orders = await this.apiService.getOrders();
+            this.data.orders = orders.map(order => ({
+                ...order,
+                timestamp: new Date(order.orderDate || order.timestamp)
+            }));
         } catch (error) {
-            console.error('Error al cargar órdenes:', error);
+            console.error('Error al cargar órdenes desde la API:', error);
             this.data.orders = [];
         }
     }
