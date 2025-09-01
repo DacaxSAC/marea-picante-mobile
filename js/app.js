@@ -95,13 +95,12 @@ export class MobileApp {
             });
         });
 
-        // Botón continuar
-        const continueBtn = document.querySelector('.continue-btn');
-        if (continueBtn) {
-            continueBtn.addEventListener('click', () => {
+        // Botones continuar
+        document.querySelectorAll('.continue-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
                 this.handleContinueAction();
             });
-        }
+        })
 
         // Botón crear orden
         const createOrderBtn = document.querySelector('.create-order-btn');
@@ -192,7 +191,11 @@ export class MobileApp {
                 this.uiManager.goToStep('products');
             }
         } else if (this.dataManager.currentStep === 'products') {
+            console.log('vvvv');
+            
             if (this.dataManager.selectedProducts.size > 0) {
+                console.log('aaa');
+                
                 this.uiManager.goToStep('preview');
                 this.uiManager.updateOrderPreview();
             }
