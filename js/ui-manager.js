@@ -386,18 +386,34 @@ export class UIManager {
             const orderElement = document.createElement('div');
             orderElement.className = 'order-item';
             orderElement.innerHTML = `
-                <div class="order-header">
-                    <span class="order-id">#${order.id}</span>
-                    <span class="order-tables">Mesa(s): ${order.tables.join(', ')}</span>
-                    <span class="order-total">S/ ${Number(order.total).toFixed(2)}</span>
-                </div>
-                <div class="order-time">${this.formatDateTime(order.timestamp)}</div>
-                <div class="order-actions">
-                    <button class="btn-view" data-order-id="${order.id}">Ver</button>
-                    <!-- <button class="btn-delete" data-order-id="${order.id}">Eliminar</button> -->
+                <div class="order-card">
+                    <div class="order-header">
+                        <div class="order-info">
+                            <span class="order-tables">Mesa(s): ${order.tables.map(t => t.number).join(', ')}</span>
+                            <span class="order-time">${this.formatTime(order.timestamp)}</span>
+                        </div>
+                        <div class="order-total">
+                            <span class="currency">S/</span>
+                            <span class="amount">${Number(order.total).toFixed(2)}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="order-body">
+                        <div class="order-status">
+                            ${this.status(order.status)}
+                        </div>
+                    </div>
+                    
+                    <div class="order-footer">
+                        <div class="order-actions">
+                            <button class="btn btn-primary btn-view" data-order-id="${order.orderId}">
+                                <span class="btn-icon">👁️</span>
+                                <span class="btn-text">Ver Detalles</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             `;
-            
             ordersContainer.appendChild(orderElement);
         });
     }
@@ -426,12 +442,14 @@ export class UIManager {
         
         modalContent.innerHTML = `
             <div class="modal-header">
-                <h2>Orden #${order.id}</h2>
+                <h2>Orden #${order.orderId}</h2>
                 <button class="close-modal">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="order-info">
-                    <p><strong>Mesa(s):</strong> ${order.tables.join(', ')}</p>
+                    <p><strong>Mesa(s):</strong> ${order.tables.map(t => {
+                        return t.number
+                    })}</p>
                     <p><strong>Fecha:</strong> ${this.formatDateTime(order.timestamp)}</p>
                     <p><strong>Estado:</strong> ${order.status}</p>
                 </div>
