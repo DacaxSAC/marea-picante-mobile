@@ -394,7 +394,7 @@ export class UIManager {
                 <div class="order-time">${this.formatDateTime(order.timestamp)}</div>
                 <div class="order-actions">
                     <button class="btn-view" data-order-id="${order.id}">Ver</button>
-                    <button class="btn-delete" data-order-id="${order.id}">Eliminar</button>
+                    <!-- <button class="btn-delete" data-order-id="${order.id}">Eliminar</button> -->
                 </div>
             `;
             
