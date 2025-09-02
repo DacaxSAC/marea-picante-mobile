@@ -187,7 +187,14 @@ export class MobileApp {
             if (e.key === 'Escape') {
                 this.uiManager.closeModal();
             }
+        })
+        
+        //  boton volver
+        document.getElementById('back-to-table').addEventListener('click', function(event) {
+            event.preventDefault(); // Previene el comportamiento por defecto si el botón está dentro de un formulario
+            window.location.href = "index.html";
         });
+
     }
 
     // Manejar acción de continuar
@@ -322,3 +329,4 @@ document.addEventListener('visibilitychange', () => {
         app.refreshTables();
     }
 });
+
