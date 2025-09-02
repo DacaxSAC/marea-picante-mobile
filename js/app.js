@@ -297,86 +297,82 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-// PWA Install
+// PWA Installation handling - Simplified for Android 11 compatibility
 let deferredPrompt;
-let installButton;
 
 window.addEventListener('beforeinstallprompt', (e) => {
-    // Prevenir que el navegador muestre el prompt automáticamente
+    console.log('PWA: Install prompt available');
     e.preventDefault();
-    
-    // Guardar el evento para usarlo después
     deferredPrompt = e;
-    
-    console.log('PWA es instalable');
-    
-    // Mostrar botón de instalación personalizado
     showInstallButton();
 });
 
-window.addEventListener('appinstalled', (evt) => {
-    console.log('PWA instalada exitosamente');
-    
-    // Ocultar el botón de instalación
-    hideInstallButton();
-    
-    // Limpiar el prompt diferido
-    deferredPrompt = null;
-});
-
-// Función para mostrar el botón de instalación
 function showInstallButton() {
-    // Crear botón si no existe
-    if (!installButton) {
-        installButton = document.createElement('button');
-        installButton.id = 'install-pwa-btn';
-        installButton.innerHTML = '📱 Instalar App';
-        installButton.style.cssText = `
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            z-index: 1000;
-            background: #2196F3;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        `;
-        
-        // Evento click para instalar
-        installButton.addEventListener('click', async () => {
-            if (deferredPrompt) {
-                // Mostrar el prompt de instalación
-                deferredPrompt.prompt();
-                
-                // Esperar la respuesta del usuario
-                const { outcome } = await deferredPrompt.userChoice;
-                
-                console.log(`Usuario ${outcome === 'accepted' ? 'aceptó' : 'rechazó'} la instalación`);
-                
-                // Limpiar el prompt diferido
-                deferredPrompt = null;
-                
-                // Ocultar el botón
-                hideInstallButton();
-            }
-        });
-        
-        document.body.appendChild(installButton);
+    // Remove existing button if present
+    const existingButton = document.getElementById('install-button');
+    if (existingButton) {
+        existingButton.remove();
     }
     
-    installButton.style.display = 'block';
+    const installButton = document.createElement('button');
+    installButton.innerHTML = '⬇️ Instalar';
+    installButton.id = 'install-button';
+    installButton.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        background: #4CAF50;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 25px;
+        font-size: 14px;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        transition: all 0.3s ease;
+    `;
+    
+    installButton.addEventListener('click', installApp);
+    document.body.appendChild(installButton);
 }
 
-// Función para ocultar el botón de instalación
-function hideInstallButton() {
-    if (installButton) {
-        installButton.style.display = 'none';
+async function installApp() {
+    if (!deferredPrompt) {
+        console.log('PWA: No install prompt available');
+        return;
+    }
+    
+    try {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log('PWA: Install outcome:', outcome);
+        
+        if (outcome === 'accepted') {
+            console.log('PWA: User accepted the install prompt');
+        } else {
+            console.log('PWA: User dismissed the install prompt');
+        }
+    } catch (error) {
+        console.error('PWA: Install error:', error);
+    } finally {
+        deferredPrompt = null;
+        hideInstallButton();
     }
 }
+
+function hideInstallButton() {
+    const installButton = document.getElementById('install-button');
+    if (installButton) {
+        installButton.remove();
+    }
+}
+
+window.addEventListener('appinstalled', () => {
+    console.log('PWA: App successfully installed');
+    hideInstallButton();
+});
 
 // Performance monitoring
 window.addEventListener('load', () => {

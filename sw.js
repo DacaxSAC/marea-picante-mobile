@@ -1,9 +1,9 @@
 // Service Worker para Marea Picante Mobile
 // Optimizado para dispositivos móviles con recursos limitados
 
-const CACHE_NAME = 'marea-picante-mobile-v1';
-const STATIC_CACHE = 'static-v1';
-const DYNAMIC_CACHE = 'dynamic-v1';
+const CACHE_NAME = 'marea-picante-v2';
+const STATIC_CACHE = 'static-v2';
+const DYNAMIC_CACHE = 'dynamic-v2';
 
 // Archivos esenciales para cachear
 const STATIC_FILES = [
@@ -22,16 +22,16 @@ const STATIC_FILES = [
 
 // Instalación del Service Worker
 self.addEventListener('install', event => {
-  console.log('SW: Installing...');
+  console.log('Service Worker: Installing...');
   
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then(cache => {
-        console.log('SW: Caching static files');
+        console.log('Service Worker: Caching files');
         return cache.addAll(STATIC_FILES);
       })
       .then(() => {
-        console.log('SW: Static files cached');
+        console.log('Service Worker: Installed successfully');
         return self.skipWaiting();
       })
       .catch(error => {
