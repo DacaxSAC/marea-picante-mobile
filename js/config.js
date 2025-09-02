@@ -3,15 +3,17 @@
 function loadEnvVariables() {
     const envVars = {};
     
-    // En un entorno de navegador, las variables de entorno se pueden cargar
-    // desde un archivo .env usando un bundler como Vite, Webpack, etc.
-    // Para aplicaciones móviles simples, usamos valores por defecto
+    // En aplicaciones web sin bundler, usamos valores por defecto
+    // que pueden ser sobrescritos manualmente en este archivo
     
-    // Valores por defecto que pueden ser sobrescritos por variables de entorno
-    envVars.API_BASE_URL = process?.env?.API_BASE_URL || 'http://localhost:4000/api';
-    envVars.API_TIMEOUT = parseInt(process?.env?.API_TIMEOUT) || 10000;
-    envVars.NOTIFICATION_DURATION = parseInt(process?.env?.NOTIFICATION_DURATION) || 4000;
-    envVars.SUCCESS_DURATION = parseInt(process?.env?.SUCCESS_DURATION) || 3000;
+    // Valores por defecto - modifica estos valores según tu entorno
+    envVars.API_BASE_URL = 'http://localhost:4000/api';
+    envVars.API_TIMEOUT = 10000;
+    envVars.NOTIFICATION_DURATION = 4000;
+    envVars.SUCCESS_DURATION = 3000;
+    
+    // Para usar variables de entorno reales, necesitarías un bundler como Vite o Webpack
+    // que procese el archivo .env y reemplace estas variables en tiempo de compilación
     
     return envVars;
 }
