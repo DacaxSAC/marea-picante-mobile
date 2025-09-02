@@ -400,7 +400,7 @@ export class UIManager {
                     
                     <div class="order-body">
                         <div class="order-status">
-                            ${this.status(order.status)}
+                            ${order.status}
                         </div>
                     </div>
                     
