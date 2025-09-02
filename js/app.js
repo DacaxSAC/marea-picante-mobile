@@ -167,13 +167,13 @@ export class MobileApp {
                 this.deleteOrder(orderId);
             }
             
-            if (e.target.classList.contains('close-modal')) {
+            if (e.target.classList.contains('close-modal') || e.target.classList.contains('modal-close')) {
                 this.uiManager.closeModal();
             }
         });
 
         // Cerrar modal al hacer clic fuera
-        const modal = document.querySelector('.modal');
+        const modal = document.querySelector('#order-modal');
         if (modal) {
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) {

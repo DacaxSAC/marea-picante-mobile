@@ -387,30 +387,24 @@ export class UIManager {
             orderElement.className = 'order-item';
             orderElement.innerHTML = `
                 <div class="order-card">
-                    <div class="order-header">
-                        <div class="order-info">
-                            <span class="order-tables">Mesa(s): ${order.tables.map(t => t.number).join(', ')}</span>
-                            <span class="order-time">${this.formatTime(order.timestamp)}</span>
-                        </div>
-                        <div class="order-total">
-                            <span class="currency">S/</span>
-                            <span class="amount">${Number(order.total).toFixed(2)}</span>
-                        </div>
+                    <div class="order-info">
+                        <div class="order-tables">Mesa(s): ${order.tables.map(t => t.number).join(', ')}</div>
+                        <div class="order-time">${this.formatTime(order.timestamp)}</div>
                     </div>
                     
-                    <div class="order-body">
-                        <div class="order-status">
-                            ${order.status}
-                        </div>
+                    <div class="order-status pending">
+                        ${order.status}
                     </div>
                     
-                    <div class="order-footer">
-                        <div class="order-actions">
-                            <button class="btn btn-primary btn-view" data-order-id="${order.orderId}">
-                                <span class="btn-icon">👁️</span>
-                                <span class="btn-text">Ver Detalles</span>
-                            </button>
-                        </div>
+                    <div class="order-total">
+                        <span class="currency">S/</span>
+                        <span class="amount">${Number(order.total).toFixed(2)}</span>
+                    </div>
+                    
+                    <div class="order-actions">
+                        <button class="btn btn-primary btn-view" data-order-id="${order.orderId}">
+                            Ver Detalles
+                        </button>
                     </div>
                 </div>
             `;
@@ -420,13 +414,14 @@ export class UIManager {
 
     // Ver detalle de orden
     viewOrderDetail(orderId) {
-        const order = this.dataManager.orders.find(o => o.id === orderId);
+        const order = this.dataManager.orders.find(o => o.orderId === orderId);
         if (!order) return;
         
-        const modal = document.querySelector('.modal');
-        const modalContent = document.querySelector('.modal-content');
+        const modal = document.querySelector('#order-modal');
+        const modalTitle = document.querySelector('#modal-title');
+        const modalBody = document.querySelector('#modal-body');
         
-        if (!modal || !modalContent) return;
+        if (!modal || !modalTitle || !modalBody) return;
         
         let itemsHtml = '';
         order.items.forEach(item => {
@@ -440,26 +435,19 @@ export class UIManager {
             `;
         });
         
-        modalContent.innerHTML = `
-            <div class="modal-header">
-                <h2>Orden #${order.orderId}</h2>
-                <button class="close-modal">&times;</button>
+        modalTitle.textContent = `Orden #${order.orderId}`;
+        modalBody.innerHTML = `
+            <div class="order-info">
+                <p><strong>Mesa(s):</strong> ${order.tables.map(t => t.number).join(', ')}</p>
+                <p><strong>Fecha:</strong> ${this.formatDateTime(order.timestamp)}</p>
+                <p><strong>Estado:</strong> ${order.status}</p>
             </div>
-            <div class="modal-body">
-                <div class="order-info">
-                    <p><strong>Mesa(s):</strong> ${order.tables.map(t => {
-                        return t.number
-                    })}</p>
-                    <p><strong>Fecha:</strong> ${this.formatDateTime(order.timestamp)}</p>
-                    <p><strong>Estado:</strong> ${order.status}</p>
-                </div>
-                <div class="order-items">
-                    <h3>Productos:</h3>
-                    ${itemsHtml}
-                </div>
-                <div class="order-total">
-                    <h3>Total: S/ ${order.total.toFixed(2)}</h3>
-                </div>
+            <div class="order-items">
+                <h3>Productos:</h3>
+                ${itemsHtml}
+            </div>
+            <div class="order-total">
+                <h3>Total: S/ ${order.total.toFixed(2)}</h3>
             </div>
         `;
         
@@ -468,7 +456,7 @@ export class UIManager {
 
     // Cerrar modal
     closeModal() {
-        const modal = document.querySelector('.modal');
+        const modal = document.querySelector('#order-modal');
         if (modal) {
             modal.style.display = 'none';
         }
