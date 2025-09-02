@@ -299,14 +299,84 @@ if ('serviceWorker' in navigator) {
 
 // PWA Install
 let deferredPrompt;
+let installButton;
+
 window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevenir que el navegador muestre el prompt automáticamente
+    e.preventDefault();
+    
+    // Guardar el evento para usarlo después
     deferredPrompt = e;
-    console.log('PWA install prompt shown automatically');
+    
+    console.log('PWA es instalable');
+    
+    // Mostrar botón de instalación personalizado
+    showInstallButton();
 });
 
 window.addEventListener('appinstalled', (evt) => {
-    console.log('PWA installed');
+    console.log('PWA instalada exitosamente');
+    
+    // Ocultar el botón de instalación
+    hideInstallButton();
+    
+    // Limpiar el prompt diferido
+    deferredPrompt = null;
 });
+
+// Función para mostrar el botón de instalación
+function showInstallButton() {
+    // Crear botón si no existe
+    if (!installButton) {
+        installButton = document.createElement('button');
+        installButton.id = 'install-pwa-btn';
+        installButton.innerHTML = '📱 Instalar App';
+        installButton.style.cssText = `
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        `;
+        
+        // Evento click para instalar
+        installButton.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                // Mostrar el prompt de instalación
+                deferredPrompt.prompt();
+                
+                // Esperar la respuesta del usuario
+                const { outcome } = await deferredPrompt.userChoice;
+                
+                console.log(`Usuario ${outcome === 'accepted' ? 'aceptó' : 'rechazó'} la instalación`);
+                
+                // Limpiar el prompt diferido
+                deferredPrompt = null;
+                
+                // Ocultar el botón
+                hideInstallButton();
+            }
+        });
+        
+        document.body.appendChild(installButton);
+    }
+    
+    installButton.style.display = 'block';
+}
+
+// Función para ocultar el botón de instalación
+function hideInstallButton() {
+    if (installButton) {
+        installButton.style.display = 'none';
+    }
+}
 
 // Performance monitoring
 window.addEventListener('load', () => {

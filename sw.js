@@ -7,13 +7,17 @@ const DYNAMIC_CACHE = 'dynamic-v1';
 
 // Archivos esenciales para cachear
 const STATIC_FILES = [
-  '/',
-  '/index.html',
-  '/styles.css',
-  '/app.js',
-  '/manifest.json',
-  '/icon-192.svg',
-  '/icon-512.svg'
+  './',
+  './index.html',
+  './styles.css',
+  './js/app.js',
+  './js/config.js',
+  './js/data-manager.js',
+  './js/ui-manager.js',
+  './js/api-service.js',
+  './manifest.json',
+  './icon-192.svg',
+  './icon-512.svg'
 ];
 
 // Instalación del Service Worker
