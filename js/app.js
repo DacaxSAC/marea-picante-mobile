@@ -297,14 +297,35 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-// PWA Installation handling - Simplified for Android 11 compatibility
+// PWA Installation handling - Enhanced for tablet compatibility
 let deferredPrompt;
+let installPromptShown = false;
+
+// Detectar si es tablet
+function isTablet() {
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isAndroidTablet = /android/i.test(userAgent) && !/mobile/i.test(userAgent);
+    const isIPad = /ipad/i.test(userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isLargeScreen = window.screen.width >= 768 && window.screen.height >= 1024;
+    return isAndroidTablet || isIPad || isLargeScreen;
+}
 
 window.addEventListener('beforeinstallprompt', (e) => {
     console.log('PWA: Install prompt available');
     e.preventDefault();
     deferredPrompt = e;
+    installPromptShown = true;
     showInstallButton();
+});
+
+// Fallback para tablets que no disparan beforeinstallprompt
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        if (!installPromptShown && isTablet()) {
+            console.log('PWA: Tablet detected, showing manual install button');
+            showManualInstallButton();
+        }
+    }, 3000);
 });
 
 function showInstallButton() {
@@ -360,6 +381,99 @@ async function installApp() {
         deferredPrompt = null;
         hideInstallButton();
     }
+}
+
+function showManualInstallButton() {
+    // Remove existing button if present
+    const existingButton = document.getElementById('install-button');
+    if (existingButton) {
+        existingButton.remove();
+    }
+    
+    const installButton = document.createElement('button');
+    installButton.innerHTML = '📱 Instalar App';
+    installButton.id = 'install-button';
+    installButton.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        background: #FF9800;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 25px;
+        font-size: 14px;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        transition: all 0.3s ease;
+    `;
+    
+    installButton.addEventListener('click', showManualInstallInstructions);
+    document.body.appendChild(installButton);
+}
+
+function showManualInstallInstructions() {
+    const modal = document.createElement('div');
+    modal.id = 'install-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.8);
+        z-index: 10000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    `;
+    
+    const modalContent = document.createElement('div');
+    modalContent.style.cssText = `
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        max-width: 400px;
+        margin: 20px;
+        text-align: center;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+    `;
+    
+    modalContent.innerHTML = `
+        <h3 style="margin-top: 0; color: #333;">📱 Instalar Aplicación</h3>
+        <p style="color: #666; line-height: 1.5;">Para instalar esta aplicación en tu tablet:</p>
+        <ol style="text-align: left; color: #666; line-height: 1.6;">
+            <li>Toca el menú del navegador (⋮)</li>
+            <li>Busca "Instalar app" o "Añadir a pantalla de inicio"</li>
+            <li>Confirma la instalación</li>
+        </ol>
+        <p style="color: #888; font-size: 12px; margin-top: 20px;">Si no aparece la opción, tu dispositivo puede no ser compatible con PWAs.</p>
+        <button id="close-modal" style="
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+        ">Entendido</button>
+    `;
+    
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+    
+    // Close modal events
+    document.getElementById('close-modal').addEventListener('click', () => {
+        modal.remove();
+    });
+    
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
 }
 
 function hideInstallButton() {
