@@ -383,6 +383,7 @@ export class UIManager {
         ordersContainer.innerHTML = '';
         
         this.dataManager.orders.forEach(order => {
+            const total = order.detalles.reduce((sum, item) => sum + Number(item.subtotal), 0).toFixed(2)
             const orderElement = document.createElement('div');
             orderElement.className = 'order-item';
             orderElement.innerHTML = `
@@ -398,7 +399,7 @@ export class UIManager {
                     
                     <div class="order-total">
                         <span class="currency">S/</span>
-                        <span class="amount">${Number(order.total).toFixed(2)}</span>
+                        <span class="amount">${total}</span>
                     </div>
                     
                     <div class="order-actions">
@@ -416,6 +417,7 @@ export class UIManager {
     viewOrderDetail(orderId) {
         const order = this.dataManager.orders.find(o => o.orderId === orderId);
         if (!order) return;
+        const total = order.detalles.reduce((sum, item) => sum + Number(item.subtotal), 0).toFixed(2)
         
         const modal = document.querySelector('#order-modal');
         const modalTitle = document.querySelector('#modal-title');
@@ -424,12 +426,12 @@ export class UIManager {
         if (!modal || !modalTitle || !modalBody) return;
         
         let itemsHtml = '';
-        order.items.forEach(item => {
+        order.detalles.forEach(item => {
             itemsHtml += `
                 <div class="order-detail-item">
-                    <span class="item-name">${item.name}</span>
+                    <span class="item-name">${item.producto?.name}</span>
                     <span class="item-details">
-                        ${item.quantity} x S/ ${item.price.toFixed(2)} = S/ ${item.subtotal.toFixed(2)}
+                        ${item.quantity} x S/ ${Number(item.unitPrice).toFixed(2)} = S/ ${Number(item.subtotal).toFixed(2)}
                     </span>
                 </div>
             `;
@@ -447,7 +449,7 @@ export class UIManager {
                 ${itemsHtml}
             </div>
             <div class="order-total">
-                <h3>Total: S/ ${order.total.toFixed(2)}</h3>
+                <h3>Total: S/ ${total}</h3>
             </div>
         `;
         

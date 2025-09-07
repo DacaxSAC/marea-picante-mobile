@@ -7,8 +7,8 @@ function loadEnvVariables() {
     // que pueden ser sobrescritos manualmente en este archivo
     
     // Valores por defecto - modifica estos valores según tu entorno
-    // envVars.API_BASE_URL = 'http://localhost:4000/api';
-    envVars.API_BASE_URL = 'https://marea-picante-prod-server.onrender.com/api';
+     envVars.API_BASE_URL = 'http://localhost:4000/api';
+    // envVars.API_BASE_URL = 'https://marea-picante-prod-server.onrender.com/api';
     envVars.API_TIMEOUT = 10000;
     envVars.NOTIFICATION_DURATION = 4000;
     envVars.SUCCESS_DURATION = 3000;
