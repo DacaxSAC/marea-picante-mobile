@@ -314,6 +314,41 @@ export class DataManager {
         this.data.currentStep = CONFIG.DEFAULT_STEP;
     }
 
+    clearSelectedProducts() {
+        this.data.selectedProducts.clear();
+    }
+
+    getSelectedProducts() {
+        const products = [];
+        for (const [productId, quantities] of this.selectedProducts) {
+            const product = this.findProductById(productId);
+            if (product) {
+                // Agregar producto personal si tiene cantidad
+                if (quantities.personal > 0) {
+                    products.push({
+                        productId: productId,
+                        quantity: quantities.personal,
+                        priceType: 'personal',
+                        unitPrice: product.pricePersonal,
+                        name: product.name
+                    });
+                }
+                
+                // Agregar producto fuente si tiene cantidad
+                if (quantities.fuente > 0) {
+                    products.push({
+                        productId: productId,
+                        quantity: quantities.fuente,
+                        priceType: 'fuente',
+                        unitPrice: product.priceFuente,
+                        name: product.name
+                    });
+                }
+            }
+        }
+        return products;
+    }
+
     // Guardar órdenes en localStorage
     saveOrders() {
         try {

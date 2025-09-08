@@ -8,8 +8,9 @@ import { UIManager } from './ui-manager.js';
 export class MobileApp {
     constructor() {
         this.dataManager = new DataManager();
-        this.uiManager = new UIManager(this.dataManager);
-        
+        this.uiManager = new UIManager(this.dataManager, this);
+        this.addingToExistingOrder = false;
+        this.targetOrderId = null;
         this.init();
     }
 
@@ -155,6 +156,14 @@ export class MobileApp {
             });
         }
 
+        // Botón confirmar agregar productos a orden existente
+        const confirmAddBtn = document.getElementById('confirm-add-to-order');
+        if (confirmAddBtn) {
+            confirmAddBtn.addEventListener('click', () => {
+                this.addProductToExistingOrder();
+            });
+        }
+
         // Event listeners para órdenes
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('btn-view')) {
@@ -162,7 +171,16 @@ export class MobileApp {
                 this.uiManager.viewOrderDetail(orderId);
             }
             
-
+            // Botón agregar producto en modal de orden
+            if (e.target.id === 'add-product-btn') {
+                const orderId = parseInt(e.target.dataset.orderId);
+                this.showProductSelector(orderId);
+            }
+            
+            // Botón cancelar agregar producto
+            if (e.target.id === 'cancel-add-product') {
+                this.hideProductSelector();
+            }
             
             if (e.target.classList.contains('close-modal') || e.target.classList.contains('modal-close')) {
                 this.uiManager.closeModal();
@@ -201,19 +219,27 @@ export class MobileApp {
                 this.uiManager.goToStep('products');
             }
         } else if (this.dataManager.currentStep === 'products') {
-            console.log('vvvv');
-            
             if (this.dataManager.selectedProducts.size > 0) {
-                console.log('aaa');
-                
-                this.uiManager.goToStep('preview');
-                this.uiManager.updateOrderPreview();
+                if (this.addingToExistingOrder) {
+                    // Si estamos agregando a orden existente, ir al preview específico
+                    this.uiManager.goToStep('preview-add');
+                    this.uiManager.updateAddOrderPreview();
+                } else {
+                    // Flujo normal de nueva orden
+                    this.uiManager.goToStep('preview');
+                    this.uiManager.updateOrderPreview();
+                }
             }
         }
     }
 
     // Crear orden
     async createOrder() {
+        // Si estamos agregando a una orden existente, usar el método específico
+        if (this.addingToExistingOrder) {
+            return this.addProductToExistingOrder();
+        }
+
         try {
             const order = await this.dataManager.createOrder();
             this.uiManager.showSuccess(CONFIG.MESSAGES.ORDER_CREATED);
@@ -261,6 +287,71 @@ export class MobileApp {
     // Refrescar solo mesas
     async refreshTables() {
         await this.loadTables();
+    }
+
+    showProductSelector(orderId) {
+        this.addingToExistingOrder = true;
+        this.targetOrderId = orderId;
+        this.uiManager.closeModal();
+        this.dataManager.clearSelectedProducts();
+        this.uiManager.switchScreen('new-order');
+        this.uiManager.goToStep('products');
+    }
+
+    hideProductSelector() {
+        this.addingToExistingOrder = false;
+        this.targetOrderId = null;
+        this.uiManager.updateAddingToOrderIndicator();
+        this.dataManager.clearSelectedProducts();
+        this.uiManager.updateContinueButton();
+        this.uiManager.updateOrderPreview();
+    }
+
+    async addProductToExistingOrder() {
+        if (!this.addingToExistingOrder || !this.targetOrderId) {
+            return this.createOrder();
+        }
+
+        const selectedProducts = this.dataManager.getSelectedProducts();
+        if (selectedProducts.length === 0) {
+            this.uiManager.showError('No hay productos seleccionados');
+            return;
+        }
+
+        try {
+            // Enviar cada producto individualmente
+            for (const product of selectedProducts) {
+                const productData = {
+                    productId: product.productId,
+                    quantity: product.quantity,
+                    unitPrice: product.unitPrice,
+                    subtotal: product.unitPrice * product.quantity
+                };
+
+                const response = await fetch(`${CONFIG.API_BASE_URL}/orders/${this.targetOrderId}/products`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(productData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error al agregar ${product.name} a la orden`);
+                }
+            }
+
+            this.uiManager.showSuccess('Productos agregados a la orden exitosamente');
+            this.dataManager.clearSelectedProducts();
+            this.addingToExistingOrder = false;
+            this.targetOrderId = null;
+            this.uiManager.switchScreen('orders');
+            await this.dataManager.loadOrders();
+            this.uiManager.updateOrdersDisplay();
+        } catch (error) {
+            console.error('Error:', error);
+            this.uiManager.showError(error.message || 'Error al agregar productos a la orden');
+        }
     }
 }
 

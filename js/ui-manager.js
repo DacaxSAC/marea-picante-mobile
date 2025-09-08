@@ -2,8 +2,9 @@
 import { CONFIG } from './config.js';
 
 export class UIManager {
-    constructor(dataManager) {
+    constructor(dataManager, app = null) {
         this.dataManager = dataManager;
+        this.app = app;
     }
 
     // Ocultar loading
@@ -49,6 +50,11 @@ export class UIManager {
         if (targetStep) {
             targetStep.classList.add('active');
             this.dataManager.setCurrentStep(stepName);
+        }
+        
+        // Mostrar indicador si estamos agregando a orden existente
+        if (stepName === 'categories' || stepName === 'products' || stepName === 'preview-add') {
+            this.updateAddingToOrderIndicator();
         }
     }
 
@@ -308,6 +314,13 @@ export class UIManager {
             } else if (currentStep === 'products') {
                 // En el paso de productos, habilitar si hay productos seleccionados
                 shouldEnable = this.dataManager.selectedProducts.size > 0;
+                
+                // Cambiar texto del botón si estamos agregando a orden existente
+                if (this.app && this.app.addingToExistingOrder) {
+                    continueBtn.textContent = 'Ver Resumen';
+                } else {
+                    continueBtn.textContent = 'Continuar';
+                }
             }
             
             continueBtn.disabled = !shouldEnable;
@@ -336,6 +349,35 @@ export class UIManager {
         if (selectedTable) {
             const tables = this.dataManager.selectedTables.join(', ');
             selectedTable.textContent = tables || '-';
+        }
+        
+        // Actualizar preview para agregar a orden existente
+        this.updateAddOrderPreview();
+    }
+
+    // Actualizar preview para agregar a orden existente
+    updateAddOrderPreview() {
+        const addOrderPreview = document.getElementById('add-order-items');
+        if (!addOrderPreview) return;
+
+        const selectedProducts = this.dataManager.selectedProducts;
+        
+        if (selectedProducts.size === 0) {
+            addOrderPreview.innerHTML = '<div class="empty-selection">No hay productos seleccionados</div>';
+            const addOrderTotal = document.getElementById('add-order-total');
+            if (addOrderTotal) {
+                addOrderTotal.textContent = '0.00';
+            }
+            return;
+        }
+
+        const { itemsHtml, total } = this.generateOrderSummary();
+        addOrderPreview.innerHTML = itemsHtml;
+        
+        // Actualizar total
+        const addOrderTotal = document.getElementById('add-order-total');
+        if (addOrderTotal) {
+            addOrderTotal.textContent = total.toFixed(2);
         }
     }
     
@@ -419,8 +461,8 @@ export class UIManager {
                         <div class="order-time">${this.formatTime(order.timestamp)}</div>
                     </div>
                     
-                    <div class="order-status pending">
-                        ${order.status === 'PENDING' ? 'Pendiente' : order.status}
+                    <div class="order-status ${this.getOrderStatusClass(order.status)}">
+                        ${this.getOrderStatusText(order.status)}
                     </div>
                     
                     <div class="order-total">
@@ -467,7 +509,7 @@ export class UIManager {
             <div class="order-info">
                 <p><strong>Mesa(s):</strong> ${order.tables.map(t => t.number).join(', ')}</p>
                 <p><strong>Fecha:</strong> ${this.formatDateTime(order.timestamp)}</p>
-                <p><strong>Estado:</strong> ${order.status}</p>
+                <p><strong>Estado:</strong> ${this.getOrderStatusText(order.status)}</p>
             </div>
             <div class="order-items">
                 <h3>Productos:</h3>
@@ -575,5 +617,64 @@ export class UIManager {
             hour: '2-digit',
             minute: '2-digit'
         });
+    }
+
+    updateAddingToOrderIndicator() {
+        const indicator = document.querySelector('.adding-to-order-indicator');
+        
+        if (this.app && this.app.addingToExistingOrder) {
+            if (!indicator) {
+                // Crear el indicador si no existe
+                const indicatorDiv = document.createElement('div');
+                indicatorDiv.className = 'adding-to-order-indicator';
+                indicatorDiv.innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="fas fa-plus-circle"></i>
+                        Agregando productos a la Orden #${this.app.targetOrderId}
+                        <button class="btn-cancel-add" onclick="app.hideProductSelector(); app.uiManager.switchScreen('orders');">Cancelar</button>
+                    </div>
+                `;
+                
+                const productsScreen = document.querySelector('#step-products');
+                if (productsScreen) {
+                    productsScreen.insertBefore(indicatorDiv, productsScreen.firstChild);
+                }
+            }
+        } else {
+            // Remover el indicador si existe
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+    }
+
+    getOrderStatusText(status) {
+        switch (status) {
+            case 'PENDING':
+                return 'Pendiente';
+            case 'IN_PROGRESS':
+                return 'En Progreso';
+            case 'PAID':
+                return 'Pagado';
+            case 'CANCELLED':
+                return 'Cancelado';
+            default:
+                return status;
+        }
+    }
+
+    getOrderStatusClass(status) {
+        switch (status) {
+            case 'PENDING':
+                return 'pending';
+            case 'IN_PROGRESS':
+                return 'in-progress';
+            case 'PAID':
+                return 'paid';
+            case 'CANCELLED':
+                return 'cancelled';
+            default:
+                return 'pending';
+        }
     }
 }
