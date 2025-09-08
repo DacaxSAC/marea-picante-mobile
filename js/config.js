@@ -44,7 +44,19 @@ export const CONFIG = {
     
     // Timing
     NOTIFICATION_DURATION: ENV.NOTIFICATION_DURATION,
-    SUCCESS_DURATION: ENV.SUCCESS_DURATION
+    SUCCESS_DURATION: ENV.SUCCESS_DURATION,
+    
+    // Printer Configuration
+    PRINTER: {
+        ENABLED: true,
+        AUTO_PRINT: true, // Imprimir automáticamente al crear orden
+        SERVICE_UUID: '000018f0-0000-1000-8000-00805f9b34fb',
+        CHARACTERISTIC_UUID: '00002af1-0000-1000-8000-00805f9b34fb',
+        DEVICE_NAMES: ['POS', 'Printer', 'BT'], // Nombres comunes de impresoras
+        PAPER_WIDTH: 32, // Ancho del papel en caracteres
+        CONNECTION_TIMEOUT: 10000, // Timeout de conexión en ms
+        RETRY_ATTEMPTS: 3 // Intentos de reconexión
+    }
 };
 
 // Función para actualizar la configuración en tiempo de ejecución

@@ -292,7 +292,6 @@ export class DataManager {
             totalItems: orderItems.length,
             totalAmount: total
         });
-        debugger
         try {
             // Enviar orden al backend
             const backendResponse = await this.apiService.createOrder(order);
