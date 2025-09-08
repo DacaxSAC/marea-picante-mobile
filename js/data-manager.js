@@ -239,12 +239,17 @@ export class DataManager {
         this.data.selectedProducts.forEach((quantities, productId) => {
             const product = this.findProductById(productId);
             if (product) {
+                const hasPersonalPrice = product.pricePersonal && product.pricePersonal > 0;
+                const hasFuentePrice = product.priceFuente && product.priceFuente > 0;
+                const hasBothPrices = hasPersonalPrice && hasFuentePrice;
+                
                 // Agregar item para precio personal si hay cantidad
                 if (quantities.personal > 0) {
                     const subtotal = product.pricePersonal * quantities.personal;
+                    const productName = hasBothPrices ? product.name + ' (Personal)' : product.name;
                     orderItems.push({
                         productId: product.productId || product.id,
-                        name: product.name + ' (Personal)',
+                        name: productName,
                         unitPrice: product.pricePersonal,
                         quantity: quantities.personal,
                         subtotal: subtotal,
@@ -256,9 +261,10 @@ export class DataManager {
                 // Agregar item para precio fuente si hay cantidad
                 if (quantities.fuente > 0) {
                     const subtotal = product.priceFuente * quantities.fuente;
+                    const productName = hasBothPrices ? product.name + ' (Fuente)' : product.name;
                     orderItems.push({
                         productId: product.productId || product.id,
-                        name: product.name + ' (Fuente)',
+                        name: productName,
                         unitPrice: product.priceFuente,
                         quantity: quantities.fuente,
                         subtotal: subtotal,

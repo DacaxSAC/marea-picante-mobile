@@ -240,17 +240,36 @@ export class MobileApp {
             return this.addProductToExistingOrder();
         }
 
+        // Deshabilitar botones de crear orden
+        const createOrderBtns = document.querySelectorAll('.create-order-btn, #create-order');
+        createOrderBtns.forEach(btn => {
+            btn.disabled = true;
+            btn.textContent = 'Creando...';
+        });
+        
+        // Mostrar loader
+        this.uiManager.showLoading();
+
         try {
             const order = await this.dataManager.createOrder();
             this.uiManager.showSuccess(CONFIG.MESSAGES.ORDER_CREATED);
             this.resetNewOrder();
-            // Recargar órdenes desde el backend
+            // Recargar órdenes y mesas desde el backend
             await this.dataManager.loadOrders();
+            await this.loadTables();
             this.uiManager.updateOrdersDisplay();
+            this.uiManager.renderTables();
             this.uiManager.switchScreen('orders');
         } catch (error) {
             console.error('Error al crear orden:', error);
             this.uiManager.showError('Error al crear la orden');
+        } finally {
+            // Ocultar loader y rehabilitar botones
+            this.uiManager.hideLoading();
+            createOrderBtns.forEach(btn => {
+                btn.disabled = false;
+                btn.textContent = 'Crear Orden';
+            });
         }
     }
 
@@ -274,6 +293,7 @@ export class MobileApp {
             await this.dataManager.loadOrders();
             
             // Actualizar la UI
+            this.uiManager.renderTables();
             this.uiManager.renderProducts();
             this.uiManager.updateOrdersDisplay();
             
@@ -318,6 +338,16 @@ export class MobileApp {
             return;
         }
 
+        // Deshabilitar botón de confirmar
+        const confirmBtn = document.getElementById('confirm-add-to-order');
+        if (confirmBtn) {
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = 'Agregando...';
+        }
+        
+        // Mostrar loader
+        this.uiManager.showLoading();
+
         try {
             // Enviar cada producto individualmente
             for (const product of selectedProducts) {
@@ -325,7 +355,8 @@ export class MobileApp {
                     productId: product.productId,
                     quantity: product.quantity,
                     unitPrice: product.unitPrice,
-                    subtotal: product.unitPrice * product.quantity
+                    subtotal: product.unitPrice * product.quantity,
+                    priceType: product.priceType || 'personal'
                 };
 
                 const response = await fetch(`${CONFIG.API_BASE_URL}/orders/${this.targetOrderId}/products`, {
@@ -351,6 +382,13 @@ export class MobileApp {
         } catch (error) {
             console.error('Error:', error);
             this.uiManager.showError(error.message || 'Error al agregar productos a la orden');
+        } finally {
+            // Ocultar loader y rehabilitar botón
+            this.uiManager.hideLoading();
+            if (confirmBtn) {
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = 'Confirmar';
+            }
         }
     }
 }
