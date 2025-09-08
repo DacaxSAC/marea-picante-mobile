@@ -253,10 +253,22 @@ body {
   font-weight: bold;
 }
 
-.table-card.occupied {
+.table-card.occupied, .table-item.occupied {
   border-color: var(--danger-color);
   background: rgba(244, 67, 54, 0.1);
   cursor: not-allowed;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.table-card.occupied:hover, .table-item.occupied:hover {
+  border-color: var(--danger-color);
+  transform: none;
+  box-shadow: none;
+}
+
+.table-card.occupied .table-number, .table-item.occupied .table-number {
+  color: var(--text-secondary);
 }
 
 .table-number {
@@ -1322,4 +1334,104 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Estilos para agregar productos a orden existente */
+.order-actions {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+
+.product-selector {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: var(--surface-light);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border);
+}
+
+.product-selector h4 {
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+  font-size: 1.1rem;
+}
+
+.category-card-modal {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--border-radius);
+  padding: 1rem;
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition);
+  margin-bottom: 0.5rem;
+}
+
+.category-card-modal:hover {
+  border-color: var(--primary-color);
+  background: var(--primary-light);
+  transform: translateY(-2px);
+}
+
+.category-card-modal h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.product-card-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  padding: 1rem;
+  cursor: pointer;
+  transition: var(--transition);
+  margin-bottom: 0.5rem;
+}
+
+.product-card-modal:hover {
+  border-color: var(--primary-color);
+  background: var(--primary-light);
+  transform: translateY(-2px);
+}
+
+.product-card-modal h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.product-card-modal .product-price {
+  font-weight: bold;
+  color: var(--primary-color);
+  margin: 0.25rem 0;
+}
+
+.product-card-modal .product-description {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.product-actions {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.btn-secondary {
+  background: var(--text-secondary);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 0.9rem;
+}
+
+.btn-secondary:hover {
+  background: var(--text-primary);
+  transform: translateY(-1px);
 }

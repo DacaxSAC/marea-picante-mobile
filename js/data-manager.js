@@ -44,20 +44,9 @@ export class DataManager {
     // Cargar mesas desde localStorage o API
     async loadTables() {
         try {
-            // Verificar si hay datos en localStorage
-            const cachedTables = localStorage.getItem('marea_tables');
-            if (cachedTables) {
-                this.data.tables = JSON.parse(cachedTables);
-                console.log('Mesas cargadas desde localStorage:', this.data.tables);
-                return true;
-            }
-            
-            // Si no hay datos en localStorage, cargar desde la API
+            // Siempre cargar desde la API para obtener el estado actualizado de las mesas
             this.data.tables = await this.apiService.loadTables();
             console.log('Mesas cargadas desde la API:', this.data.tables);
-            
-            // Guardar en localStorage para futuras cargas
-            localStorage.setItem('marea_tables', JSON.stringify(this.data.tables));
             return true;
         } catch (error) {
             console.error('Error al cargar las mesas:', error);
@@ -355,15 +344,15 @@ export class DataManager {
 
     // Métodos para gestionar el cache de localStorage
     clearCache() {
-        localStorage.removeItem('marea_tables');
+        // Las mesas ya no se guardan en localStorage
         localStorage.removeItem('marea_categories');
         localStorage.removeItem('marea_products');
-        console.log('Cache de localStorage limpiado');
+        console.log('Cache de localStorage limpiado (excepto mesas que siempre se cargan desde API)');
     }
 
     clearTablesCache() {
-        localStorage.removeItem('marea_tables');
-        console.log('Cache de mesas limpiado');
+        // Las mesas ya no se guardan en localStorage, siempre se cargan desde la API
+        console.log('Las mesas siempre se cargan desde la API - no hay cache que limpiar');
     }
 
     clearCategoriesCache() {

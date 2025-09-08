@@ -64,5 +64,12 @@ export class ApiService {
         });
     }
 
+    // Agregar producto a orden existente
+    async addProductToOrder(orderId, orderDetail) {
+        return this.makeRequest(`/orders/${orderId}/products`, {
+            method: 'POST',
+            body: JSON.stringify(orderDetail)
+        });
+    }
 
 }

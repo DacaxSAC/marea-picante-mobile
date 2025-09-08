@@ -70,34 +70,60 @@ export class UIManager {
             tableElement.dataset.table = table.number || table.id;
             
             const isSelected = this.dataManager.selectedTables.includes(table.number || table.id);
+            const isOccupied = table.state === 2;
+            
             if (isSelected) {
                 tableElement.classList.add('selected');
             }
             
+            if (isOccupied) {
+                tableElement.classList.add('occupied');
+            }
+            
             tableElement.innerHTML = `
                 <div class="table-number">Mesa ${table.number || table.id}</div>
-                <div class="table-status ${table.status || 'available'}">
-                    ${this.getTableStatusText(table.status || 'available')}
+                <div class="table-status ${this.getTableStatusClass(table.state || 1)}">
+                    ${this.getTableStatusText(table.state || 1)}
                 </div>
             `;
             
-            tableElement.addEventListener('click', () => {
-                this.selectTable(table.number || table.id);
-            });
+            // Solo agregar event listener si la mesa no está ocupada
+            if (!isOccupied) {
+                tableElement.addEventListener('click', () => {
+                    this.selectTable(table.number || table.id);
+                });
+            }
             
             tablesGrid.appendChild(tableElement);
         });
     }
 
     // Obtener texto de estado de mesa
-    getTableStatusText(status) {
-        const statusTexts = {
-            'available': 'Disponible',
-            'occupied': 'Ocupada',
-            'reserved': 'Reservada',
-            'cleaning': 'Limpieza'
-        };
-        return statusTexts[status] || 'Disponible';
+    getTableStatusText(state) {
+        switch (state) {
+            case 1:
+                return 'Disponible';
+            case 2:
+                return 'Ocupada';
+            case 3:
+                return 'Reservada';
+            default:
+                return 'Disponible';
+        }
+    }
+
+    // Obtener clase CSS de estado de mesa
+    getTableStatusClass(state) {
+        switch (state) {
+            case 1:
+                return 'available';
+            case 2:
+                return 'occupied';
+            case 3:
+                return 'reserved';
+            default:
+                return 'available';
+        }
     }
 
     // Seleccionar mesa
@@ -449,6 +475,17 @@ export class UIManager {
             </div>
             <div class="order-total">
                 <h3>Total: S/ ${total}</h3>
+            </div>
+            <div class="order-actions">
+                <button id="add-product-btn" class="btn-primary" data-order-id="${order.orderId}">Agregar Producto</button>
+            </div>
+            <div id="product-selector" class="product-selector" style="display: none;">
+                <h4>Seleccionar Producto:</h4>
+                <div id="product-categories-modal" class="categories-grid"></div>
+                <div id="product-list-modal" class="products-grid"></div>
+                <div class="product-actions">
+                    <button id="cancel-add-product" class="btn-secondary">Cancelar</button>
+                </div>
             </div>
         `;
         
