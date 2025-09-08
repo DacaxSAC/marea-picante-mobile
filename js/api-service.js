@@ -64,10 +64,5 @@ export class ApiService {
         });
     }
 
-    // Eliminar orden
-    async deleteOrder(orderId) {
-        return this.makeRequest(`/orders/${orderId}`, {
-            method: 'DELETE'
-        });
-    }
+
 }

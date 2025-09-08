@@ -387,28 +387,27 @@ export class UIManager {
             const orderElement = document.createElement('div');
             orderElement.className = 'order-item';
             orderElement.innerHTML = `
-                <div class="order-card">
+                <div class="order-card" data-order-id="${order.orderId}" style="cursor: pointer;">
                     <div class="order-info">
                         <div class="order-tables">Mesa(s): ${order.tables.map(t => t.number).join(', ')}</div>
                         <div class="order-time">${this.formatTime(order.timestamp)}</div>
                     </div>
                     
                     <div class="order-status pending">
-                        ${order.status}
+                        ${order.status === 'PENDING' ? 'Pendiente' : order.status}
                     </div>
                     
                     <div class="order-total">
                         <span class="currency">S/</span>
                         <span class="amount">${total}</span>
                     </div>
-                    
-                    <div class="order-actions">
-                        <button class="btn btn-primary btn-view" data-order-id="${order.orderId}">
-                            Ver Detalles
-                        </button>
-                    </div>
                 </div>
             `;
+            
+            // Agregar evento click a la card
+            orderElement.querySelector('.order-card').addEventListener('click', () => {
+                this.viewOrderDetail(order.orderId);
+            });
             ordersContainer.appendChild(orderElement);
         });
     }
@@ -453,14 +452,14 @@ export class UIManager {
             </div>
         `;
         
-        modal.style.display = 'block';
+        modal.classList.add('active');
     }
 
     // Cerrar modal
     closeModal() {
         const modal = document.querySelector('#order-modal');
         if (modal) {
-            modal.style.display = 'none';
+            modal.classList.remove('active');
         }
     }
 

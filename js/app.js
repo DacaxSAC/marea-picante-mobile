@@ -162,10 +162,7 @@ export class MobileApp {
                 this.uiManager.viewOrderDetail(orderId);
             }
             
-            if (e.target.classList.contains('btn-delete')) {
-                const orderId = parseInt(e.target.dataset.orderId);
-                this.deleteOrder(orderId);
-            }
+
             
             if (e.target.classList.contains('close-modal') || e.target.classList.contains('modal-close')) {
                 this.uiManager.closeModal();
@@ -231,18 +228,7 @@ export class MobileApp {
         }
     }
 
-    // Eliminar orden
-    async deleteOrder(orderId) {
-        if (confirm('¿Estás seguro de que quieres eliminar esta orden?')) {
-            const success = await this.dataManager.deleteOrder(orderId);
-            if (success) {
-                this.uiManager.showSuccess(CONFIG.MESSAGES.ORDER_DELETED);
-                this.uiManager.updateOrdersDisplay();
-            } else {
-                this.uiManager.showError('Error al eliminar la orden');
-            }
-        }
-    }
+
 
     // Resetear nueva orden
     resetNewOrder() {

@@ -316,16 +316,7 @@ export class DataManager {
         }
     }
 
-    // Eliminar orden
-    deleteOrder(orderId) {
-        const index = this.data.orders.findIndex(order => order.id === orderId);
-        if (index > -1) {
-            this.data.orders.splice(index, 1);
-            this.saveOrders();
-            return true;
-        }
-        return false;
-    }
+
 
     // Resetear nueva orden
     resetNewOrder() {

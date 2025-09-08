@@ -39,8 +39,7 @@ export const CONFIG = {
         ERROR_CONNECTION_CATEGORIES: 'Sin conexión con la API. Usando categorías por defecto.',
         ERROR_LOADING_PRODUCTS: 'Error al cargar productos desde la API. Usando productos por defecto.',
         ERROR_CONNECTION_PRODUCTS: 'Sin conexión con la API. Usando productos por defecto.',
-        ORDER_CREATED: 'Orden creada exitosamente',
-        ORDER_DELETED: 'Orden eliminada exitosamente'
+        ORDER_CREATED: 'Orden creada exitosamente'
     },
     
     // Timing
