@@ -321,8 +321,8 @@ export class UIManager {
             if (currentStep === 'tables') {
                 // En el paso de mesas, habilitar si hay mesas seleccionadas y la impresora está conectada (si es requerida)
                 const hasSelectedTables = this.dataManager.selectedTables.length > 0;
-                const isPrinterConnected = !CONFIG.PRINTER.ENABLED || this.app.printerService.isConnected;
-                shouldEnable = hasSelectedTables && isPrinterConnected;
+                // const isPrinterConnected = !CONFIG.PRINTER.ENABLED || this.app.printerService.isConnected;
+                shouldEnable = hasSelectedTables; // && isPrinterConnected;
             } else if (currentStep === 'products') {
                 // En el paso de productos, habilitar si hay productos seleccionados
                 shouldEnable = this.dataManager.selectedProducts.size > 0;
@@ -416,10 +416,19 @@ export class UIManager {
                     const productName = hasBothPrices ? product.name + ' (Personal)' : product.name;
 
                     itemsHtml += `
-                        <div class="order-item">
-                            <span class="item-name">${productName}</span>
-                            <span class="item-quantity">x${quantities.personal}</span>
-                            <span class="item-price">S/ ${subtotal.toFixed(2)}</span>
+                        <div class="order-item" data-product-id="${productId}" data-price-type="personal">
+                            <div class="item-info">
+                                <div class="item-left">
+                                    <button class="comment-toggle" data-product-id="${productId}" data-price-type="personal">
+                                        <span class="comment-icon">+</span>
+                                    </button>
+                                    <span class="item-name">${productName} x${quantities.personal}</span>
+                                </div>
+                                <div class="item-price">S/ ${subtotal.toFixed(2)}</div>
+                            </div>
+                            <div class="comment-input-container" style="display: none;">
+                                <input type="text" class="comment-input" placeholder="Agregar comentario..." data-product-id="${productId}" data-price-type="personal">
+                            </div>
                         </div>
                     `;
                 }
@@ -431,10 +440,19 @@ export class UIManager {
                     const productName = hasBothPrices ? product.name + ' (Fuente)' : product.name;
 
                     itemsHtml += `
-                        <div class="order-item">
-                            <span class="item-name">${productName}</span>
-                            <span class="item-quantity">x${quantities.fuente}</span>
-                            <span class="item-price">S/ ${subtotal.toFixed(2)}</span>
+                        <div class="order-item" data-product-id="${productId}" data-price-type="fuente">
+                            <div class="item-info">
+                                <div class="item-left">
+                                    <button class="comment-toggle" data-product-id="${productId}" data-price-type="fuente">
+                                        <span class="comment-icon">+</span>
+                                    </button>
+                                    <span class="item-name">${productName} x${quantities.fuente}</span>
+                                </div>
+                                <span class="item-price">S/ ${subtotal.toFixed(2)}</span>
+                            </div>
+                            <div class="comment-input-container" style="display: none;">
+                                <input type="text" class="comment-input" placeholder="Agregar comentario..." data-product-id="${productId}" data-price-type="fuente">
+                            </div>
                         </div>
                     `;
                 }

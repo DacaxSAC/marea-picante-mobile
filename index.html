@@ -114,8 +114,15 @@
                             <div class="summary-table">
                                 <strong>Mesa: <span id="selected-table">-</span></strong>
                             </div>
-                            <div class="summary-customer">
-                                <input type="text" id="customer-name" placeholder="Nombre del cliente (opcional)">
+                            <div class="summary-delivery">
+                                <label class="delivery-toggle">
+                                    <span class="delivery-label">¿Es delivery?</span>
+                                    <input type="checkbox" id="delivery-switch">
+                                    <span class="delivery-slider"></span>
+                                </label>
+                                <div class="summary-customer" id="customer-section" style="display: none; margin-top: 1rem;">
+                                    <input type="text" id="customer-name" placeholder="Nombre del cliente">
+                                </div>
                             </div>
                             <div id="order-items" class="order-items">
                                 <!-- Selected items will appear here -->

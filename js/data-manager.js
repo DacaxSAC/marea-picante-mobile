@@ -247,13 +247,19 @@ export class DataManager {
                 if (quantities.personal > 0) {
                     const subtotal = product.pricePersonal * quantities.personal;
                     const productName = hasBothPrices ? product.name + ' (Personal)' : product.name;
+                    
+                    // Obtener comentario del input correspondiente
+                    const commentInput = document.querySelector(`input.comment-input[data-product-id="${productId}"][data-price-type="personal"]`);
+                    const comment = commentInput ? commentInput.value.trim() : '';
+                    
                     orderItems.push({
                         productId: product.productId || product.id,
                         name: productName,
                         unitPrice: product.pricePersonal,
                         quantity: quantities.personal,
                         subtotal: subtotal,
-                        priceType: 'personal'
+                        priceType: 'personal',
+                        comment: comment
                     });
                     total += subtotal;
                 }
@@ -262,18 +268,28 @@ export class DataManager {
                 if (quantities.fuente > 0) {
                     const subtotal = product.priceFuente * quantities.fuente;
                     const productName = hasBothPrices ? product.name + ' (Fuente)' : product.name;
+                    
+                    // Obtener comentario del input correspondiente
+                    const commentInput = document.querySelector(`input.comment-input[data-product-id="${productId}"][data-price-type="fuente"]`);
+                    const comment = commentInput ? commentInput.value.trim() : '';
+                    
                     orderItems.push({
                         productId: product.productId || product.id,
                         name: productName,
                         unitPrice: product.priceFuente,
                         quantity: quantities.fuente,
                         subtotal: subtotal,
-                        priceType: 'fuente'
+                        priceType: 'fuente',
+                        comment: comment
                     });
                     total += subtotal;
                 }
             }
         });
+        
+        // Obtener el valor del switch de delivery
+        const deliverySwitch = document.getElementById('delivery-switch');
+        const isDelivery = deliverySwitch ? deliverySwitch.checked : false;
         
         const order = {
             id: Date.now(),
@@ -281,7 +297,8 @@ export class DataManager {
             items: orderItems,
             total: total,
             timestamp: new Date(),
-            status: 'pending'
+            status: 'pending',
+            isDelivery: isDelivery ? 1 : 0
         };
         
         // Log para ver la estructura de la orden antes de enviarla al backend

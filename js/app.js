@@ -188,6 +188,45 @@ export class MobileApp {
             });
         }
         
+        // Switch de delivery
+        const deliverySwitch = document.getElementById('delivery-switch');
+        const customerSection = document.getElementById('customer-section');
+        
+        if (deliverySwitch && customerSection) {
+            deliverySwitch.addEventListener('change', () => {
+                if (deliverySwitch.checked) {
+                    customerSection.style.display = 'block';
+                } else {
+                    customerSection.style.display = 'none';
+                    // Limpiar el campo cuando se oculta
+                    const customerNameInput = document.getElementById('customer-name');
+                    if (customerNameInput) {
+                        customerNameInput.value = '';
+                    }
+                }
+            });
+        }
+        
+        // Event listener para botones de comentario
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.comment-toggle')) {
+                const button = e.target.closest('.comment-toggle');
+                const orderItem = button.closest('.order-item');
+                const container = orderItem.querySelector('.comment-input-container');
+                const icon = button.querySelector('.comment-icon');
+                
+                if (container.style.display === 'none' || !container.style.display) {
+                    container.style.display = 'block';
+                    button.classList.add('active');
+                    icon.textContent = '-';
+                } else {
+                    container.style.display = 'none';
+                    button.classList.remove('active');
+                    icon.textContent = '+';
+                }
+            }
+        });
+        
         if (autoPrintCheckbox) {
             autoPrintCheckbox.addEventListener('change', (e) => {
                 CONFIG.PRINTER.AUTO_PRINT = e.target.checked;
