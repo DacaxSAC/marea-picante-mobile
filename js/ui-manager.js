@@ -459,6 +459,72 @@ export class UIManager {
             }
         });
 
+        // Calcular y mostrar cargos por delivery si está activado
+        const deliverySwitch = document.getElementById('delivery-switch');
+        const isDelivery = deliverySwitch ? deliverySwitch.checked : false;
+        
+        if (isDelivery) {
+            let tapersPersonales = 0;
+            let tapersFuente = 0;
+            
+            // Contar la cantidad de tapers necesarios
+            this.dataManager.selectedProducts.forEach((quantities, productId) => {
+                const product = this.dataManager.findProductById(productId);
+                if (product) {
+                    // Excluir guarniciones (categoryId: 10) y bebidas (categoryId: 11)
+                    if (product.categoryId !== 10 && product.categoryId !== 11) {
+                        tapersPersonales += quantities.personal || 0;
+                        tapersFuente += quantities.fuente || 0;
+                    }
+                }
+            });
+            
+            // Mostrar tapers como un solo item si hay cantidad
+            if (tapersPersonales > 0 || tapersFuente > 0) {
+                const subtotalPersonales = tapersPersonales * 1.00;
+                const subtotalFuente = tapersFuente * 2.00;
+                const totalTapers = subtotalPersonales + subtotalFuente;
+                const cantidadTotal = tapersPersonales + tapersFuente;
+                
+                total += totalTapers;
+                itemsHtml += `
+                    <div class="order-item taper-charge">
+                        <div class="item-info">
+                            <div class="item-left">
+                                <span class="item-name">
+                                    <span class="delivery-icon">📦</span>
+                                    Tapers descartables
+                                </span>
+                                <span class="item-quantity">x${cantidadTotal}</span>
+                            </div>
+                            <div class="item-price">S/ ${totalTapers.toFixed(2)}</div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Agregar cargo por delivery
+            const deliveryChargeInput = document.getElementById('delivery-charge');
+            const deliveryFee = deliveryChargeInput ? parseFloat(deliveryChargeInput.value) || 0 : 0;
+            
+            if (deliveryFee > 0) {
+                total += deliveryFee;
+                itemsHtml += `
+                    <div class="order-item delivery-charge">
+                        <div class="item-info">
+                            <div class="item-left">
+                                <span class="item-name">
+                                    <span class="delivery-icon">🚚</span>
+                                    Cargo por delivery
+                                </span>
+                            </div>
+                            <div class="item-price">S/ ${deliveryFee.toFixed(2)}</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
         return { itemsHtml, total };
     }
 
@@ -541,25 +607,69 @@ export class UIManager {
             const priceTypeClass = item.priceType === 'fuente' ? 'price-fuente' : 'price-personal';
 
             itemsHtml += `
-                <div class="order-detail-item ${priceTypeClass}">
-                    <span class="item-name">${product?.name}${priceTypeLabel}</span>
-                    <span class="item-details">
-                        ${item.quantity} x S/ ${Number(item.unitPrice).toFixed(2)} = S/ ${Number(item.subtotal).toFixed(2)}
-                    </span>
+                <div class="product-item" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 0.75rem; border-left: 4px solid ${item.priceType === 'fuente' ? '#FF6B35' : '#4ECDC4'};">
+                    <div style="display: flex; align-items: center; flex: 1;">
+                        <span style="font-size: 1.5rem; margin-right: 0.75rem;">${item.priceType === 'fuente' ? '🍽️' : '🍴'}</span>
+                        <div>
+                            <div style="font-weight: 700; color: #2c3e50; font-size: 1rem; margin-bottom: 0.25rem;">${product?.name}</div>
+                            <div style="font-size: 0.75rem; color: #7f8c8d; text-transform: uppercase; font-weight: 600;">${priceTypeLabel.replace(/[()]/g, '').trim() || 'Personal'}</div>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                            <span style="background: #ecf0f1; color: #2c3e50; padding: 0.25rem 0.5rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600;">${item.quantity}x</span>
+                            <span style="color: #7f8c8d; font-size: 0.875rem;">S/ ${Number(item.unitPrice).toFixed(2)}</span>
+                        </div>
+                        <div style="font-weight: 700; color: #27ae60; font-size: 1rem;">S/ ${Number(item.subtotal).toFixed(2)}</div>
+                    </div>
                 </div>
             `;
         });
 
         modalTitle.textContent = `Orden #${order.orderId}`;
         modalBody.innerHTML = `
-            <div class="order-info">
-                <p><strong>Mesa(s):</strong> ${order.tables.sort((a, b) => a.number - b.number).map(t => t.number).join(', ')}</p>
-                <p><strong>Fecha:</strong> ${this.formatDateTime(order.timestamp)}</p>
-                <p><strong>Estado:</strong> ${this.getOrderStatusText(order.status)}</p>
+            <div class="info-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div class="info-item" style="display: flex; align-items: center; padding: 0.75rem; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <span style="font-size: 1.2rem; margin-right: 0.5rem;">👤</span>
+                    <div>
+                        <div style="font-size: 0.75rem; color: #6c757d; text-transform: uppercase; font-weight: 600;">Cliente</div>
+                        <div style="font-weight: 600; color: #495057;">${order.customerName || 'Sin especificar'}</div>
+                    </div>
+                </div>
+                <div class="info-item" style="display: flex; align-items: center; padding: 0.75rem; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <span style="font-size: 1.2rem; margin-right: 0.5rem;">🪑</span>
+                    <div>
+                        <div style="font-size: 0.75rem; color: #6c757d; text-transform: uppercase; font-weight: 600;">Mesa(s)</div>
+                        <div style="font-weight: 600; color: #495057;">${order.tables.sort((a, b) => a.number - b.number).map(t => t.number).join(', ')}</div>
+                    </div>
+                </div>
             </div>
-            <div class="order-items">
-                <h3>Productos:</h3>
-                ${itemsHtml}
+            <div class="info-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                <div class="info-item" style="display: flex; align-items: center; padding: 0.75rem; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <span style="font-size: 1.2rem; margin-right: 0.5rem;">📅</span>
+                    <div>
+                        <div style="font-size: 0.75rem; color: #6c757d; text-transform: uppercase; font-weight: 600;">Fecha</div>
+                        <div style="font-weight: 600; color: #495057;">${this.formatDateTime(order.timestamp)}</div>
+                    </div>
+                </div>
+                <div class="info-item" style="display: flex; align-items: center; padding: 0.75rem; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <span style="font-size: 1.2rem; margin-right: 0.5rem;">📊</span>
+                    <div>
+                        <div style="font-size: 0.75rem; color: #6c757d; text-transform: uppercase; font-weight: 600;">Estado</div>
+                        <div style="font-weight: 600; color: #495057;">
+                            <span class="status-badge ${this.getOrderStatusClass(order.status)}" style="padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; text-transform: uppercase; font-weight: 700;">${this.getOrderStatusText(order.status)}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="order-items" style="margin-top: 1.5rem;">
+                <div style="display: flex; align-items: center; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 2px solid #ecf0f1;">
+                    <span style="font-size: 1.5rem; margin-right: 0.5rem;">🛒</span>
+                    <h3 style="margin: 0; color: #2c3e50; font-weight: 700; font-size: 1.25rem;">Productos Ordenados</h3>
+                </div>
+                <div style="max-height: 300px; overflow-y: auto; padding-right: 0.5rem;">
+                    ${itemsHtml}
+                </div>
             </div>
             <div id="product-selector" class="product-selector" style="display: none;">
                 <h4>Seleccionar Producto:</h4>

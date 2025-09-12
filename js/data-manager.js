@@ -291,6 +291,106 @@ export class DataManager {
         const deliverySwitch = document.getElementById('delivery-switch');
         const isDelivery = deliverySwitch ? deliverySwitch.checked : false;
         
+        // Calcular cargo por delivery si está activado
+        let deliveryCharge = 0;
+        if (isDelivery) {
+            this.data.selectedProducts.forEach((quantities, productId) => {
+                const product = this.findProductById(productId);
+                if (product) {
+                    // Excluir guarniciones (categoryId: 10) y bebidas (categoryId: 11)
+                    if (product.categoryId !== 10 && product.categoryId !== 11) {
+                        // S/1 por cada producto personal
+                        if (quantities.personal > 0) {
+                            deliveryCharge += quantities.personal * 1.00;
+                        }
+                        // S/2 por cada producto fuente
+                        if (quantities.fuente > 0) {
+                            deliveryCharge += quantities.fuente * 2.00;
+                        }
+                    }
+                }
+            });
+        }
+
+        // Agregar tapers descartables si aplica
+        if (isDelivery) {
+            let tapersPersonales = 0;
+            let tapersFuente = 0;
+            
+            // Contar la cantidad de tapers necesarios
+            this.data.selectedProducts.forEach((quantities, productId) => {
+                const product = this.findProductById(productId);
+                if (product) {
+                    // Excluir guarniciones (categoryId: 10) y bebidas (categoryId: 11)
+                    if (product.categoryId !== 10 && product.categoryId !== 11) {
+                        tapersPersonales += quantities.personal || 0;
+                        tapersFuente += quantities.fuente || 0;
+                    }
+                }
+            });
+            
+            // Buscar los productos de tapers en la base de datos
+            const taperPersonalProduct = this.data.allProducts.find(p => p.name === 'Taper Personal');
+            const taperFuenteProduct = this.data.allProducts.find(p => p.name === 'Taper Fuente');
+            
+            // Agregar tapers personales si hay cantidad
+            if (tapersPersonales > 0 && taperPersonalProduct) {
+                const subtotal = taperPersonalProduct.pricePersonal * tapersPersonales;
+                orderItems.push({
+                    productId: taperPersonalProduct.productId,
+                    name: 'Taper Personal',
+                    unitPrice: taperPersonalProduct.pricePersonal,
+                    quantity: tapersPersonales,
+                    subtotal: subtotal,
+                    priceType: 'personal',
+                    comment: 'Tapers descartables para productos personales'
+                });
+                total += subtotal;
+            }
+            
+            // Agregar tapers fuente si hay cantidad
+            if (tapersFuente > 0 && taperFuenteProduct) {
+                const subtotal = taperFuenteProduct.pricePersonal * tapersFuente;
+                orderItems.push({
+                    productId: taperFuenteProduct.productId,
+                    name: 'Taper Fuente',
+                    unitPrice: taperFuenteProduct.pricePersonal,
+                    quantity: tapersFuente,
+                    subtotal: subtotal,
+                    priceType: 'personal',
+                    comment: 'Tapers descartables para productos fuente'
+                });
+                total += subtotal;
+            }
+        }
+
+        // Agregar cargo por delivery si aplica
+         if (isDelivery) {
+             const deliveryChargeInput = document.getElementById('delivery-charge');
+            const deliveryFee = deliveryChargeInput ? parseFloat(deliveryChargeInput.value) || 0 : 0;
+            
+            if (deliveryFee > 0) {
+                // Buscar el producto "Delivery" en la base de datos
+                const deliveryProduct = this.data.allProducts.find(p => p.name === 'Delivery');
+                
+                orderItems.push({
+                    productId: deliveryProduct ? deliveryProduct.productId : null,
+                    name: 'Cargo por delivery',
+                    unitPrice: deliveryFee,
+                    quantity: 1,
+                    subtotal: deliveryFee,
+                    priceType: 'personal',
+                    comment: 'Cargo por servicio de delivery',
+                    isDeliveryCharge: true
+                });
+                total += deliveryFee;
+            }
+         }
+
+        // Capturar el nombre del cliente del input
+        const customerNameInput = document.getElementById('customer-name');
+        const customerName = customerNameInput ? customerNameInput.value.trim() : '';
+
         const order = {
             id: Date.now(),
             tables: [...this.data.selectedTables],
@@ -298,7 +398,8 @@ export class DataManager {
             total: total,
             timestamp: new Date(),
             status: 'pending',
-            isDelivery: isDelivery ? 1 : 0
+            isDelivery: isDelivery ? 1 : 0,
+            customerName: customerName
         };
         
         // Log para ver la estructura de la orden antes de enviarla al backend

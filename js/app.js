@@ -204,8 +204,18 @@ export class MobileApp {
                         customerNameInput.value = '';
                     }
                 }
+                // Actualizar el preview de la orden para mostrar/ocultar cargo por delivery
+                this.uiManager.updateOrderPreview();
             });
         }
+        
+        // Event listener para el campo de cargo por delivery
+         const deliveryChargeInput = document.getElementById('delivery-charge');
+         if (deliveryChargeInput) {
+             deliveryChargeInput.addEventListener('input', () => {
+                 this.uiManager.updateOrderPreview();
+             });
+         }
         
         // Event listener para botones de comentario
         document.addEventListener('click', (e) => {
