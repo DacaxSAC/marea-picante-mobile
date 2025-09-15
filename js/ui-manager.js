@@ -71,45 +71,66 @@ export class UIManager {
         const tablesGrid = document.querySelector('.tables-grid');
         if (!tablesGrid) return;
 
-        if (this.dataManager.tables.length === 0) {
-            tablesGrid.innerHTML = '<div class="no-tables">No hay mesas disponibles</div>';
-            return;
-        }
-
         tablesGrid.innerHTML = '';
 
-        this.dataManager.tables.forEach(table => {
-            const tableElement = document.createElement('div');
-            tableElement.className = 'table-item';
-            tableElement.dataset.table = table.number || table.id;
+        // Agregar mesa 0 para órdenes para llevar
+        const takeawayElement = document.createElement('div');
+        takeawayElement.className = 'table-item takeaway';
+        takeawayElement.dataset.table = 0;
 
-            const isSelected = this.dataManager.selectedTables.includes(table.number || table.id);
-            const isOccupied = table.state === 2;
+        const isSelected = this.dataManager.selectedTables.includes(0);
+        if (isSelected) {
+            takeawayElement.classList.add('selected');
+        }
 
-            if (isSelected) {
-                tableElement.classList.add('selected');
-            }
+        takeawayElement.innerHTML = `
+            <div class="table-number">🥡</div>
+            <div class="table-status takeaway-status">
+                Para Llevar
+            </div>
+        `;
 
-            if (isOccupied) {
-                tableElement.classList.add('occupied');
-            }
-
-            tableElement.innerHTML = `
-                <div class="table-number">Mesa ${table.number || table.id}</div>
-                <div class="table-status ${this.getTableStatusClass(table.state || 1)}">
-                    ${this.getTableStatusText(table.state || 1)}
-                </div>
-            `;
-
-            // Solo agregar event listener si la mesa no está ocupada
-            if (!isOccupied) {
-                tableElement.addEventListener('click', () => {
-                    this.selectTable(table.number || table.id);
-                });
-            }
-
-            tablesGrid.appendChild(tableElement);
+        takeawayElement.addEventListener('click', () => {
+            this.selectTable(0);
         });
+
+        tablesGrid.appendChild(takeawayElement);
+
+        // Renderizar mesas normales si existen (excluyendo mesa 0 que ya se renderizó como para llevar)
+        if (this.dataManager.tables.length > 0) {
+            this.dataManager.tables.filter(table => (table.number || table.id) !== 0).forEach(table => {
+                const tableElement = document.createElement('div');
+                tableElement.className = 'table-item';
+                tableElement.dataset.table = table.number || table.id;
+
+                const isSelected = this.dataManager.selectedTables.includes(table.number || table.id);
+                const isOccupied = table.state === 2;
+
+                if (isSelected) {
+                    tableElement.classList.add('selected');
+                }
+
+                if (isOccupied) {
+                    tableElement.classList.add('occupied');
+                }
+
+                tableElement.innerHTML = `
+                    <div class="table-number">Mesa ${table.number || table.id}</div>
+                    <div class="table-status ${this.getTableStatusClass(table.state || 1)}">
+                        ${this.getTableStatusText(table.state || 1)}
+                    </div>
+                `;
+
+                // Solo agregar event listener si la mesa no está ocupada
+                if (!isOccupied) {
+                    tableElement.addEventListener('click', () => {
+                        this.selectTable(table.number || table.id);
+                    });
+                }
+
+                tablesGrid.appendChild(tableElement);
+            });
+        }
     }
 
     // Obtener texto de estado de mesa
@@ -145,6 +166,36 @@ export class UIManager {
         this.dataManager.toggleTableSelection(tableNumber);
         this.renderTables();
         this.updateContinueButton();
+        
+        // Si se selecciona mesa 0 (para llevar), activar y deshabilitar el switch de delivery
+        const deliverySwitch = document.getElementById('delivery-switch');
+        if (deliverySwitch) {
+            if (this.dataManager.selectedTables.includes(0)) {
+                deliverySwitch.checked = true;
+                deliverySwitch.disabled = true;
+                // Mostrar la sección de cliente
+                const customerSection = document.getElementById('customer-section');
+                if (customerSection) {
+                    customerSection.style.display = 'block';
+                }
+            } else {
+                deliverySwitch.disabled = false;
+                // Si no hay mesa 0 seleccionada, ocultar la sección de cliente si el switch está desactivado
+                if (!deliverySwitch.checked) {
+                    const customerSection = document.getElementById('customer-section');
+                    if (customerSection) {
+                        customerSection.style.display = 'none';
+                        // Limpiar el campo de nombre del cliente
+                        const customerNameInput = document.getElementById('customer-name');
+                        if (customerNameInput) {
+                            customerNameInput.value = '';
+                        }
+                    }
+                }
+            }
+            // Actualizar el preview de la orden
+            this.updateOrderPreview();
+        }
     }
 
     // Renderizar categorías
@@ -399,8 +450,12 @@ export class UIManager {
         }
 
         if (selectedTable) {
-            const tables = this.dataManager.selectedTables.join(', ');
-            selectedTable.textContent = tables || '-';
+            const tables = this.dataManager.selectedTables;
+            if (tables.includes(0)) {
+                selectedTable.innerHTML = '🥡 Para Llevar';
+            } else {
+                selectedTable.textContent = `Mesa(s): ${tables.join(', ') || '-'}`;
+            }
         }
 
         // Actualizar preview para agregar a orden existente
@@ -827,7 +882,7 @@ export class UIManager {
             orderElement.innerHTML = `
                 <div class="order-card" data-order-id="${order.orderId}" style="cursor: pointer;">
                     <div class="order-info">
-                        <div class="order-tables">Mesa(s): ${order.tables.sort((a, b) => a.number - b.number).map(t => t.number).join(', ')}</div>
+                        <div class="order-tables">${(order.isDelivery || order.tables.length === 0) ? 'Para Llevar' : `Mesa(s): ${order.tables.sort((a, b) => a.number - b.number).map(t => t.number).join(', ')}`}</div>
                         <div class="order-time">${this.formatTime(order.timestamp)}</div>
                     </div>
                     
@@ -917,10 +972,10 @@ export class UIManager {
                     </div>
                 </div>
                 <div class="info-item" style="display: flex; align-items: center; padding: 0.75rem; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <span style="font-size: 1.2rem; margin-right: 0.5rem;">🪑</span>
+                    <span style="font-size: 1.2rem; margin-right: 0.5rem;">${(order.isDelivery || order.tables.length === 0) ? '🥡' : '🪑'}</span>
                     <div>
-                        <div style="font-size: 0.75rem; color: #6c757d; text-transform: uppercase; font-weight: 600;">Mesa(s)</div>
-                        <div style="font-weight: 600; color: #495057;">${order.tables.sort((a, b) => a.number - b.number).map(t => t.number).join(', ')}</div>
+                        <div style="font-size: 0.75rem; color: #6c757d; text-transform: uppercase; font-weight: 600;">${(order.isDelivery || order.tables.length === 0) ? 'Orden' : 'Mesa(s)'}</div>
+                        <div style="font-weight: 600; color: #495057;">${(order.isDelivery || order.tables.length === 0) ? 'Para Llevar' : order.tables.sort((a, b) => a.number - b.number).map(t => t.number).join(', ')}</div>
                     </div>
                 </div>
             </div>

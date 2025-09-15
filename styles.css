@@ -294,6 +294,42 @@ body {
   color: var(--danger-color);
 }
 
+/* Estilos específicos para mesa de para llevar */
+.table-item.takeaway {
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+  border-color: #ff9800;
+  color: white;
+}
+
+.table-item.takeaway:hover {
+  border-color: #f57c00;
+  background: linear-gradient(135deg, #f57c00 0%, #ef6c00 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+}
+
+.table-item.takeaway.selected {
+  background: linear-gradient(135deg, #f57c00 0%, #ef6c00 100%);
+  border-color: #ef6c00;
+  box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.5);
+}
+
+.table-item.takeaway .table-number {
+  font-size: 2.5rem;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.table-item.takeaway .table-status {
+  color: white;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.table-item.takeaway .table-status.takeaway-status {
+  color: white;
+}
+
 /* Loading indicator for tables */
 .loading-tables {
   display: flex;

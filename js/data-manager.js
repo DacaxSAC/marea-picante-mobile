@@ -195,7 +195,17 @@ export class DataManager {
         if (index > -1) {
             this.data.selectedTables.splice(index, 1);
         } else {
-            this.data.selectedTables.push(tableNumber);
+            // Si se selecciona mesa 0 (para llevar), limpiar otras selecciones
+            if (tableNumber === 0) {
+                this.data.selectedTables = [0];
+            } else {
+                // Si se selecciona una mesa normal y ya está seleccionada la mesa 0, remover mesa 0
+                const takeawayIndex = this.data.selectedTables.indexOf(0);
+                if (takeawayIndex > -1) {
+                    this.data.selectedTables.splice(takeawayIndex, 1);
+                }
+                this.data.selectedTables.push(tableNumber);
+            }
         }
     }
 
@@ -390,9 +400,12 @@ export class DataManager {
         const customerNameInput = document.getElementById('customer-name');
         const customerName = customerNameInput ? customerNameInput.value.trim() : '';
 
+        // Para órdenes para llevar, enviar array vacío en lugar de [0]
+        const tablesToSend = this.data.selectedTables.includes(0) ? [] : [...this.data.selectedTables];
+        
         const order = {
             id: Date.now(),
-            tables: [...this.data.selectedTables],
+            tables: tablesToSend,
             items: orderItems,
             total: total,
             timestamp: new Date(),
