@@ -372,16 +372,16 @@ export class MobileApp {
         try {
             const order = await this.dataManager.createOrder();
             
-            // Imprimir ticket automáticamente si está habilitado y la impresora está conectada
+            // Imprimir ticket de cocina automáticamente si está habilitado y la impresora está conectada
             if (CONFIG.PRINTER.ENABLED && CONFIG.PRINTER.AUTO_PRINT && this.printerService.isConnected) {
                 try {
-                    console.log('🖨️ Imprimiendo ticket automáticamente...');
-                    await this.printerService.printOrder(order);
-                    this.uiManager.showSuccess('Orden creada y ticket impreso exitosamente');
+                    console.log('🖨️ Imprimiendo ticket de cocina automáticamente...');
+                    await this.printerService.printKitchenTicket(order);
+                    this.uiManager.showSuccess('Orden creada y ticket de cocina impreso exitosamente');
                 } catch (printError) {
-                    console.error('❌ Error al imprimir ticket:', printError);
+                    console.error('❌ Error al imprimir ticket de cocina:', printError);
                     this.uiManager.showSuccess(CONFIG.MESSAGES.ORDER_CREATED);
-                    this.uiManager.showError('Orden creada pero falló la impresión del ticket');
+                    this.uiManager.showError('Orden creada pero falló la impresión del ticket de cocina');
                 }
             } else {
                 this.uiManager.showSuccess(CONFIG.MESSAGES.ORDER_CREATED);

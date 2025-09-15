@@ -324,8 +324,8 @@ export class UIManager {
             if (currentStep === 'tables') {
                 // En el paso de mesas, habilitar si hay mesas seleccionadas y la impresora está conectada (si es requerida)
                 const hasSelectedTables = this.dataManager.selectedTables.length > 0;
-                // const isPrinterConnected = !CONFIG.PRINTER.ENABLED || this.app.printerService.isConnected;
-                shouldEnable = hasSelectedTables; // && isPrinterConnected;
+                const isPrinterConnected = !CONFIG.PRINTER.ENABLED || this.app.printerService.isConnected;
+                shouldEnable = hasSelectedTables && isPrinterConnected;
             } else if (currentStep === 'products') {
                 // En el paso de productos, habilitar si hay productos seleccionados
                 shouldEnable = this.dataManager.selectedProducts.size > 0;
@@ -356,9 +356,46 @@ export class UIManager {
         const selectedTable = document.getElementById('selected-table');
 
         if (orderItems && orderTotal) {
+            // Guardar valores actuales de comentarios antes de regenerar
+            const currentComments = {};
+            const visibleContainers = {};
+            document.querySelectorAll('.comment-input').forEach(input => {
+                const productId = input.getAttribute('data-product-id');
+                const priceType = input.getAttribute('data-price-type');
+                const key = `${productId}-${priceType}`;
+                currentComments[key] = input.value;
+                
+                // Guardar estado de visibilidad del contenedor
+                const container = input.closest('.comment-input-container');
+                if (container && container.style.display !== 'none') {
+                    visibleContainers[key] = true;
+                }
+            });
+            
             const { itemsHtml, total } = this.generateOrderSummary();
             orderItems.innerHTML = itemsHtml;
             orderTotal.textContent = total.toFixed(2);
+            
+            // Restaurar valores de comentarios después de regenerar
+            Object.keys(currentComments).forEach(key => {
+                const [productId, priceType] = key.split('-');
+                const input = document.querySelector(`input.comment-input[data-product-id="${productId}"][data-price-type="${priceType}"]`);
+                if (input && currentComments[key]) {
+                    input.value = currentComments[key];
+                }
+                
+                // Restaurar estado de visibilidad
+                if (visibleContainers[key]) {
+                    const container = input?.closest('.comment-input-container');
+                    const button = document.querySelector(`button.comment-toggle[data-product-id="${productId}"][data-price-type="${priceType}"]`);
+                    if (container && button) {
+                        container.style.display = 'block';
+                        button.classList.remove('btn-outline-secondary');
+                        button.classList.add('btn-secondary');
+                        button.innerHTML = '<i class="fas fa-comment"></i> Ocultar comentario';
+                    }
+                }
+            });
         }
 
         if (selectedTable) {
@@ -405,6 +442,22 @@ export class UIManager {
             return { itemsHtml: '<div class="empty-order">No hay productos seleccionados</div>', total: 0 };
         }
 
+        // Guardar valores actuales de comentarios y estado de visibilidad antes de regenerar
+        const currentComments = {};
+        const visibleContainers = {};
+        document.querySelectorAll('.comment-input').forEach(input => {
+            const productId = input.getAttribute('data-product-id');
+            const priceType = input.getAttribute('data-price-type');
+            const key = `${productId}-${priceType}`;
+            currentComments[key] = input.value;
+            
+            // Guardar estado de visibilidad del contenedor
+            const container = input.closest('.comment-input-container');
+            if (container && container.style.display !== 'none') {
+                visibleContainers[key] = true;
+            }
+        });
+
         this.dataManager.selectedProducts.forEach((quantities, productId) => {
             const product = this.dataManager.findProductById(productId);
             if (product) {
@@ -417,20 +470,26 @@ export class UIManager {
                     const subtotal = product.pricePersonal * quantities.personal;
                     total += subtotal;
                     const productName = hasBothPrices ? product.name + ' (Personal)' : product.name;
+                    const commentKey = `${productId}-personal`;
+                    const savedComment = currentComments[commentKey] || '';
+                    const isVisible = visibleContainers[commentKey] || false;
+                    const containerDisplay = isVisible ? 'block' : 'none';
+                    const iconText = isVisible ? '-' : '+';
+                    const buttonClass = isVisible ? 'comment-toggle active' : 'comment-toggle';
 
                     itemsHtml += `
                         <div class="order-item" data-product-id="${productId}" data-price-type="personal">
                             <div class="item-info">
                                 <div class="item-left">
-                                    <button class="comment-toggle" data-product-id="${productId}" data-price-type="personal">
-                                        <span class="comment-icon">+</span>
+                                    <button class="${buttonClass}" data-product-id="${productId}" data-price-type="personal">
+                                        <span class="comment-icon">${iconText}</span>
                                     </button>
                                     <span class="item-name">${productName} x${quantities.personal}</span>
                                 </div>
                                 <div class="item-price">S/ ${subtotal.toFixed(2)}</div>
                             </div>
-                            <div class="comment-input-container" style="display: none;">
-                                <input type="text" class="comment-input" placeholder="Agregar comentario..." data-product-id="${productId}" data-price-type="personal">
+                            <div class="comment-input-container" style="display: ${containerDisplay};">
+                                <input type="text" class="comment-input" placeholder="Agregar comentario..." data-product-id="${productId}" data-price-type="personal" value="${savedComment}">
                             </div>
                         </div>
                     `;
@@ -441,20 +500,26 @@ export class UIManager {
                     const subtotal = product.priceFuente * quantities.fuente;
                     total += subtotal;
                     const productName = hasBothPrices ? product.name + ' (Fuente)' : product.name;
+                    const commentKey = `${productId}-fuente`;
+                    const savedComment = currentComments[commentKey] || '';
+                    const isVisible = visibleContainers[commentKey] || false;
+                    const containerDisplay = isVisible ? 'block' : 'none';
+                    const iconText = isVisible ? '-' : '+';
+                    const buttonClass = isVisible ? 'comment-toggle active' : 'comment-toggle';
 
                     itemsHtml += `
                         <div class="order-item" data-product-id="${productId}" data-price-type="fuente">
                             <div class="item-info">
                                 <div class="item-left">
-                                    <button class="comment-toggle" data-product-id="${productId}" data-price-type="fuente">
-                                        <span class="comment-icon">+</span>
+                                    <button class="${buttonClass}" data-product-id="${productId}" data-price-type="fuente">
+                                        <span class="comment-icon">${iconText}</span>
                                     </button>
                                     <span class="item-name">${productName} x${quantities.fuente}</span>
                                 </div>
                                 <span class="item-price">S/ ${subtotal.toFixed(2)}</span>
                             </div>
-                            <div class="comment-input-container" style="display: none;">
-                                <input type="text" class="comment-input" placeholder="Agregar comentario..." data-product-id="${productId}" data-price-type="fuente">
+                            <div class="comment-input-container" style="display: ${containerDisplay};">
+                                <input type="text" class="comment-input" placeholder="Agregar comentario..." data-product-id="${productId}" data-price-type="fuente" value="${savedComment}">
                             </div>
                         </div>
                     `;
@@ -540,6 +605,22 @@ export class UIManager {
             return { itemsHtml: '<div class="empty-order">No hay productos seleccionados</div>', total: 0 };
         }
 
+        // Guardar valores actuales de comentarios y estado de visibilidad antes de regenerar
+        const currentComments = {};
+        const visibleContainers = {};
+        document.querySelectorAll('.comment-input').forEach(input => {
+            const productId = input.getAttribute('data-product-id');
+            const priceType = input.getAttribute('data-price-type');
+            const key = `${productId}-${priceType}`;
+            currentComments[key] = input.value;
+            
+            // Guardar estado de visibilidad del contenedor
+            const container = input.closest('.comment-input-container');
+            if (container && container.style.display !== 'none') {
+                visibleContainers[key] = true;
+            }
+        });
+
         this.dataManager.selectedProducts.forEach((quantities, productId) => {
             const product = this.dataManager.findProductById(productId);
             if (product) {
@@ -552,20 +633,26 @@ export class UIManager {
                     const subtotal = product.pricePersonal * quantities.personal;
                     total += subtotal;
                     const productName = hasBothPrices ? product.name + ' (Personal)' : product.name;
+                    const commentKey = `${productId}-personal`;
+                    const savedComment = currentComments[commentKey] || '';
+                    const isVisible = visibleContainers[commentKey] || false;
+                    const containerDisplay = isVisible ? 'block' : 'none';
+                    const iconText = isVisible ? '-' : '+';
+                    const buttonClass = isVisible ? 'comment-toggle active' : 'comment-toggle';
 
                     itemsHtml += `
                         <div class="order-item" data-product-id="${productId}" data-price-type="personal">
                             <div class="item-info">
                                 <div class="item-left">
-                                    <button class="comment-toggle" data-product-id="${productId}" data-price-type="personal">
-                                        <span class="comment-icon">+</span>
+                                    <button class="${buttonClass}" data-product-id="${productId}" data-price-type="personal">
+                                        <span class="comment-icon">${iconText}</span>
                                     </button>
                                     <span class="item-name">${productName} x${quantities.personal}</span>
                                 </div>
                                 <div class="item-price">S/ ${subtotal.toFixed(2)}</div>
                             </div>
-                            <div class="comment-input-container" style="display: none;">
-                                <input type="text" class="comment-input" placeholder="Agregar comentario..." data-product-id="${productId}" data-price-type="personal">
+                            <div class="comment-input-container" style="display: ${containerDisplay};">
+                                <input type="text" class="comment-input" placeholder="Agregar comentario..." data-product-id="${productId}" data-price-type="personal" value="${savedComment}">
                             </div>
                         </div>
                     `;
@@ -576,20 +663,26 @@ export class UIManager {
                     const subtotal = product.priceFuente * quantities.fuente;
                     total += subtotal;
                     const productName = hasBothPrices ? product.name + ' (Fuente)' : product.name;
+                    const commentKey = `${productId}-fuente`;
+                    const savedComment = currentComments[commentKey] || '';
+                    const isVisible = visibleContainers[commentKey] || false;
+                    const containerDisplay = isVisible ? 'block' : 'none';
+                    const iconText = isVisible ? '-' : '+';
+                    const buttonClass = isVisible ? 'comment-toggle active' : 'comment-toggle';
 
                     itemsHtml += `
                         <div class="order-item" data-product-id="${productId}" data-price-type="fuente">
                             <div class="item-info">
                                 <div class="item-left">
-                                    <button class="comment-toggle" data-product-id="${productId}" data-price-type="fuente">
-                                        <span class="comment-icon">+</span>
+                                    <button class="${buttonClass}" data-product-id="${productId}" data-price-type="fuente">
+                                        <span class="comment-icon">${iconText}</span>
                                     </button>
                                     <span class="item-name">${productName} x${quantities.fuente}</span>
                                 </div>
                                 <span class="item-price">S/ ${subtotal.toFixed(2)}</span>
                             </div>
-                            <div class="comment-input-container" style="display: none;">
-                                <input type="text" class="comment-input" placeholder="Agregar comentario..." data-product-id="${productId}" data-price-type="fuente">
+                            <div class="comment-input-container" style="display: ${containerDisplay};">
+                                <input type="text" class="comment-input" placeholder="Agregar comentario..." data-product-id="${productId}" data-price-type="fuente" value="${savedComment}">
                             </div>
                         </div>
                     `;
@@ -668,6 +761,22 @@ export class UIManager {
 
     // Actualizar contenido del preview en el paso de productos
     updateOrderPreviewContent(orderPreview) {
+        // Guardar valores actuales de comentarios antes de regenerar
+        const currentComments = {};
+        const visibleContainers = {};
+        document.querySelectorAll('.comment-input').forEach(input => {
+            const productId = input.getAttribute('data-product-id');
+            const priceType = input.getAttribute('data-price-type');
+            const key = `${productId}-${priceType}`;
+            currentComments[key] = input.value;
+            
+            // Guardar estado de visibilidad del contenedor
+            const container = input.closest('.comment-input-container');
+            if (container && container.style.display !== 'none') {
+                visibleContainers[key] = true;
+            }
+        });
+        
         const { itemsHtml, total } = this.generateOrderSummary();
 
         orderPreview.innerHTML = `
@@ -676,6 +785,27 @@ export class UIManager {
                 <strong>Total: S/ ${total.toFixed(2)}</strong>
             </div>
         `;
+        
+        // Restaurar valores de comentarios después de regenerar
+        Object.keys(currentComments).forEach(key => {
+            const [productId, priceType] = key.split('-');
+            const input = document.querySelector(`input.comment-input[data-product-id="${productId}"][data-price-type="${priceType}"]`);
+            if (input && currentComments[key]) {
+                input.value = currentComments[key];
+            }
+            
+            // Restaurar estado de visibilidad
+            if (visibleContainers[key]) {
+                const container = input?.closest('.comment-input-container');
+                const button = document.querySelector(`button.comment-toggle[data-product-id="${productId}"][data-price-type="${priceType}"]`);
+                if (container && button) {
+                    container.style.display = 'block';
+                    button.classList.remove('btn-outline-secondary');
+                    button.classList.add('btn-secondary');
+                    button.innerHTML = '<i class="fas fa-comment"></i> Ocultar comentario';
+                }
+            }
+        });
     }
 
     // Actualizar display de órdenes

@@ -139,6 +139,10 @@ export class PrinterService {
             UNDERLINE_ON: '\x1B\x2D\x01',
             UNDERLINE_OFF: '\x1B\x2D\x00',
             DOUBLE_HEIGHT: '\x1B\x21\x10',
+            DOUBLE_WIDTH: '\x1B\x21\x20',
+            DOUBLE_SIZE: '\x1B\x21\x30', // Doble altura y ancho
+            EXTRA_LARGE: '\x1B\x21\x38', // Extra grande (altura x3)
+            MEGA_SIZE: '\x1B\x21\x3F', // Máximo tamaño disponible
             NORMAL_SIZE: '\x1B\x21\x00',
             CUT_PAPER: '\x1D\x56\x00',
             FEED_LINE: '\x0A',
@@ -147,7 +151,7 @@ export class PrinterService {
     }
 
     // Formatear texto para el ancho del papel
-    formatText(text, align = 'left') {
+    formatText(text, align = 'left', isLargeText = false) {
         const maxWidth = this.config.paperWidth;
         let formatted = '';
         
@@ -156,7 +160,11 @@ export class PrinterService {
             if (line.length <= maxWidth) {
                 switch (align) {
                     case 'center':
-                        const padding = Math.floor((maxWidth - line.length) / 2);
+                        let padding = Math.floor((maxWidth - line.length) / 2);
+                        // Ajustar padding para texto extra grande
+                        if (isLargeText) {
+                            padding = Math.max(0, padding - 5); // Reducir padding para compensar desplazamiento
+                        }
                         formatted += ' '.repeat(padding) + line + '\n';
                         break;
                     case 'right':
@@ -236,6 +244,110 @@ export class PrinterService {
         return ticket;
     }
 
+    // Generar ticket para cocina (simplificado)
+    generateKitchenTicket(order) {
+        const cmd = this.getESCCommands();
+        let ticket = '';
+        
+        // Inicializar impresora
+        ticket += cmd.INIT;
+        
+        // Espacios en blanco arriba
+        ticket += cmd.FEED_LINE;
+        ticket += cmd.FEED_LINE;
+        
+        // Título COCINA
+        ticket += cmd.BOLD_ON + cmd.DOUBLE_HEIGHT;
+        ticket += this.formatText('COCINA', 'center');
+        ticket += cmd.BOLD_OFF + cmd.NORMAL_SIZE;
+        ticket += cmd.FEED_LINE;
+        
+        // Mostrar mesas o "PARA LLEVAR" según el tipo
+        if (order.isDelivery) {
+            // Si es delivery, mostrar "PARA LLEVAR" en letra extra grande
+            ticket += cmd.BOLD_ON + cmd.MEGA_SIZE;
+            ticket += this.formatText('PARA LLEVAR', 'center', true);
+            ticket += cmd.BOLD_OFF + cmd.NORMAL_SIZE;
+        } else if (order.tables && order.tables.length > 0) {
+            // Si no es delivery, mostrar "MESA:" o "MESAS:" según la cantidad
+            const tableLabel = order.tables.length === 1 ? 'MESA:' : 'MESAS:';
+            ticket += cmd.BOLD_ON + cmd.DOUBLE_HEIGHT;
+            ticket += this.formatText(`${tableLabel} ${order.tables.sort((a,b) => a - b).join(', ')}`, 'center');
+            ticket += cmd.BOLD_OFF + cmd.NORMAL_SIZE;
+        }
+
+        // Si es delivery, mostrar nombre del cliente - centrado y grande
+        ticket += cmd.FEED_LINE;
+        if (order.isDelivery && order.customerName) {
+            ticket += cmd.BOLD_ON + cmd.DOUBLE_HEIGHT;
+            ticket += this.formatText(`CLIENTE: ${order.customerName}`, 'center');
+            ticket += cmd.BOLD_OFF + cmd.NORMAL_SIZE;
+        }
+        
+        ticket += cmd.FEED_LINE;
+        ticket += cmd.FEED_LINE;
+        
+        // Separador
+        ticket += cmd.ALIGN_CENTER;
+        ticket += this.formatText('================================', 'center');
+        ticket += cmd.FEED_LINE;
+        
+        // Lista de productos con mejor formato
+        ticket += cmd.ALIGN_LEFT + cmd.BOLD_ON;
+        ticket += this.formatText('PRODUCTOS:');
+        ticket += cmd.BOLD_OFF;
+        ticket += cmd.FEED_LINE;
+        
+        order.items.forEach(item => {
+            // Filtrar cargos por delivery - no mostrar en ticket de cocina
+            if (item.name && (item.name.toLowerCase().includes('delivery') || 
+                             item.name.toLowerCase().includes('domicilio') ||
+                             item.name.toLowerCase().includes('envío') ||
+                             item.name.toLowerCase().includes('taper'))) {
+                return; // Saltar este item
+            }
+            
+            // Formatear nombre según tipo de precio
+            let productName = item.name;
+            
+            // Remover (Personal) o (Fuente) del nombre
+            productName = productName.replace(/ \(Personal\)$/, '').replace(/ \(Fuente\)$/, '');
+            
+            // Si es tipo fuente, agregar F. al inicio
+            if (item.priceType === 'fuente') {
+                productName = 'F. ' + productName;
+            }
+            
+            // Productos con letra grande y espaciado
+            ticket += cmd.BOLD_ON + cmd.DOUBLE_HEIGHT;
+            ticket += this.formatText(`${item.quantity}  ${productName}`);
+            ticket += cmd.BOLD_OFF + cmd.NORMAL_SIZE;
+            
+            // Mostrar comentario si existe
+            if (item.comment && item.comment.trim() !== '') {
+                ticket += cmd.BOLD_ON;
+                ticket += this.formatText(`   >> ${item.comment}`, 'left');
+                ticket += cmd.BOLD_OFF;
+            }
+            
+            ticket += cmd.FEED_LINE;
+        });
+        
+        // Separador final
+        ticket += cmd.ALIGN_CENTER;
+        ticket += this.formatText('================================', 'center');
+        
+        // Espacios en blanco abajo
+        ticket += cmd.FEED_LINE;
+        ticket += cmd.FEED_LINE;
+        ticket += cmd.FEED_LINE;
+        
+        // Cortar
+        ticket += cmd.CUT_PAPER;
+        
+        return ticket;
+    }
+
     // Imprimir ticket de orden
     async printOrder(order) {
         try {
@@ -261,6 +373,35 @@ export class PrinterService {
             return true;
         } catch (error) {
             console.error('❌ Error al imprimir ticket:', error);
+            throw error;
+        }
+    }
+
+    // Imprimir ticket de cocina
+    async printKitchenTicket(order) {
+        try {
+            console.log('🖨️ Iniciando impresión de ticket de cocina...');
+            
+            // Conectar si no está conectado
+            if (!this.isConnected) {
+                await this.connect();
+            }
+            
+            // Verificar que la impresora esté conectada
+            if (!this.isConnected || !this.characteristic) {
+                throw new Error('Impresora no conectada');
+            }
+            
+            // Generar ticket de cocina
+            const ticket = this.generateKitchenTicket(order);
+            
+            // Enviar a impresora
+            await this.sendData(ticket);
+            
+            console.log('✅ Ticket de cocina impreso exitosamente');
+            return true;
+        } catch (error) {
+            console.error('❌ Error al imprimir ticket de cocina:', error);
             throw error;
         }
     }
