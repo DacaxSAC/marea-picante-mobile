@@ -16,11 +16,152 @@ export class PrinterService {
             deviceName: 'POS', // Nombre común de impresoras POS
             paperWidth: 32 // Ancho del papel en caracteres
         };
+        
+        console.log('🔧 Inicializando PrinterService...');
+        
+        // Verificar si hay dispositivo guardado para mostrar estado
+        this.checkSavedDevice();
     }
 
     // Verificar si Bluetooth está disponible
     isBluetoothAvailable() {
         return 'bluetooth' in navigator;
+    }
+
+    // Guardar información del dispositivo en localStorage
+    saveDeviceInfo(device) {
+        try {
+            const deviceInfo = {
+                id: device.id,
+                name: device.name,
+                connected: true,
+                timestamp: Date.now()
+            };
+            localStorage.setItem('printerDevice', JSON.stringify(deviceInfo));
+            console.log('💾 Información del dispositivo guardada');
+        } catch (error) {
+            console.error('❌ Error al guardar información del dispositivo:', error);
+        }
+    }
+
+    // Obtener información del dispositivo desde localStorage
+    getSavedDeviceInfo() {
+        try {
+            const saved = localStorage.getItem('printerDevice');
+            if (saved) {
+                const deviceInfo = JSON.parse(saved);
+                // Verificar que la información no sea muy antigua (24 horas)
+                const maxAge = 24 * 60 * 60 * 1000; // 24 horas en milisegundos
+                if (Date.now() - deviceInfo.timestamp < maxAge) {
+                    return deviceInfo;
+                }
+            }
+        } catch (error) {
+            console.error('❌ Error al obtener información del dispositivo:', error);
+        }
+        return null;
+    }
+
+    // Limpiar información del dispositivo guardada
+    clearSavedDeviceInfo() {
+        try {
+            localStorage.removeItem('printerDevice');
+            console.log('🗑️ Información del dispositivo eliminada');
+        } catch (error) {
+            console.error('❌ Error al eliminar información del dispositivo:', error);
+        }
+    }
+
+    // Intentar reconexión automática
+    checkSavedDevice() {
+        const savedDevice = this.getSavedDeviceInfo();
+        if (savedDevice) {
+            console.log('📱 Dispositivo guardado encontrado:', savedDevice.name);
+            console.log('ℹ️ Para reconectar, usa el botón de conexión en la interfaz');
+        } else {
+            console.log('ℹ️ No hay dispositivo guardado');
+        }
+    }
+
+    async attemptReconnectWithUserGesture() {
+        try {
+            console.log('🔄 Iniciando reconexión con gesto del usuario...');
+            
+            if (!this.isBluetoothAvailable()) {
+                console.log('❌ Bluetooth no disponible');
+                return false;
+            }
+
+            const savedDevice = this.getSavedDeviceInfo();
+            if (!savedDevice) {
+                console.log('ℹ️ No hay dispositivo guardado, conectando nuevo dispositivo');
+                return await this.connect();
+            }
+
+            console.log('🔄 Intentando reconectar a:', savedDevice.name);
+            
+            // Usar requestDevice con filtros para reconectar
+            console.log('📱 Buscando dispositivo guardado...');
+            const device = await navigator.bluetooth.requestDevice({
+                filters: [
+                    { name: savedDevice.name },
+                    { namePrefix: 'POS' },
+                    { namePrefix: 'Printer' }
+                ],
+                optionalServices: [this.config.serviceUUID]
+            });
+            
+            if (device && device.id === savedDevice.id) {
+                console.log('✅ Dispositivo encontrado, intentando reconectar...');
+                return await this.reconnectToDevice(device);
+            } else {
+                console.log('📱 Dispositivo no coincide, conectando el seleccionado');
+                return await this.reconnectToDevice(device);
+            }
+        } catch (error) {
+            console.log('❌ Error en reconexión:', error.message);
+            return false;
+        }
+    }
+
+    // Reconectar a un dispositivo específico
+    async reconnectToDevice(device) {
+        try {
+            this.device = device;
+            
+            // Conectar al dispositivo
+            const server = await this.device.gatt.connect();
+            console.log('🔗 Reconectado al servidor GATT');
+
+            // Obtener servicio
+            const service = await server.getPrimaryService(this.config.serviceUUID);
+            console.log('🔧 Servicio obtenido');
+
+            // Obtener característica
+            this.characteristic = await service.getCharacteristic(this.config.characteristicUUID);
+            console.log('📡 Característica obtenida');
+
+            this.isConnected = true;
+            console.log('✅ Impresora reconectada automáticamente');
+            
+            // Configurar listener para desconexión
+            this.device.addEventListener('gattserverdisconnected', () => {
+                console.log('🔌 Impresora desconectada inesperadamente');
+                this.isConnected = false;
+                this.clearSavedDeviceInfo();
+            });
+            
+            return true;
+        } catch (error) {
+            console.error('❌ Error al reconectar:', error);
+            this.device = null;
+            this.server = null;
+            this.service = null;
+            this.characteristic = null;
+            this.isConnected = false;
+            this.clearSavedDeviceInfo();
+            return false;
+        }
     }
 
     // Conectar a la impresora
@@ -66,6 +207,16 @@ export class PrinterService {
             this.isConnected = true;
             console.log('✅ Impresora conectada correctamente');
             
+            // Guardar información del dispositivo para reconexión automática
+            this.saveDeviceInfo(this.device);
+            
+            // Configurar listener para desconexión
+            this.device.addEventListener('gattserverdisconnected', () => {
+                console.log('🔌 Impresora desconectada inesperadamente');
+                this.isConnected = false;
+                this.clearSavedDeviceInfo();
+            });
+            
             return true;
         } catch (error) {
             console.error('❌ Error al conectar impresora:', error);
@@ -91,11 +242,15 @@ export class PrinterService {
             this.characteristic = null;
             this.isConnected = false;
             
+            // Limpiar información guardada al desconectar manualmente
+            this.clearSavedDeviceInfo();
+            
             console.log('🔌 Impresora desconectada');
             return true;
         } catch (error) {
             console.error('❌ Error al desconectar impresora:', error);
             this.isConnected = false;
+            this.clearSavedDeviceInfo();
             throw error;
         }
     }
@@ -413,7 +568,7 @@ export class PrinterService {
                 orderId: 'TEST-001',
                 timestamp: new Date().toISOString(),
                 tables: [{ number: 1 }],
-                detalles: [
+                items: [
                     {
                         name: 'Ceviche Mixto',
                         quantity: 1,

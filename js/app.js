@@ -35,6 +35,11 @@ export class MobileApp {
             // Verificar soporte de Bluetooth
             this.checkBluetoothSupport();
             
+            // Verificar si la impresora se reconectó automáticamente
+            setTimeout(() => {
+                this.updatePrinterUI(this.printerService.isConnected);
+            }, 1000); // Dar tiempo para la reconexión automática
+            
         } catch (error) {
             console.error('Error al inicializar la aplicación:', error);
             this.uiManager.showError('Error al inicializar la aplicación');
@@ -474,10 +479,19 @@ export class MobileApp {
     async connectPrinter() {
         try {
             this.uiManager.showLoading();
-            await this.printerService.connect();
-            this.updatePrinterUI(true);
-            this.uiManager.showSuccess('Impresora conectada exitosamente');
-            return true;
+            
+            // Intentar reconectar con dispositivo guardado o conectar nuevo
+            const connected = await this.printerService.attemptReconnectWithUserGesture();
+            
+            if (connected) {
+                this.updatePrinterUI(true);
+                this.uiManager.showSuccess('Impresora conectada exitosamente');
+                return true;
+            } else {
+                this.updatePrinterUI(false);
+                this.uiManager.showError('No se pudo conectar con la impresora');
+                return false;
+            }
         } catch (error) {
             console.error('Error al conectar impresora:', error);
             this.updatePrinterUI(false);
@@ -955,10 +969,17 @@ window.addEventListener('load', () => {
     }
 });
 
-// Save data before unload
-window.addEventListener('beforeunload', () => {
+// Save data before unload and prevent reload if printer is connected
+window.addEventListener('beforeunload', (event) => {
     if (app && app.dataManager) {
         app.dataManager.saveOrders();
+    }
+    
+    // Prevenir recarga si la impresora está conectada
+    if (app && app.printerService && app.printerService.isConnected) {
+        event.preventDefault();
+        event.returnValue = '¿Estás seguro de que quieres recargar la página? La impresora se desconectará.';
+        return event.returnValue;
     }
 });
 
@@ -967,6 +988,35 @@ document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && app) {
         // Refresh data when app becomes visible
         app.refreshTables();
+    }
+    if (document.hidden && app && app.dataManager) {
+        app.dataManager.saveOrders();
+    }
+});
+
+// Prevenir recarga con atajos de teclado cuando la impresora está conectada
+document.addEventListener('keydown', (event) => {
+    if (app && app.printerService && app.printerService.isConnected) {
+        // Prevenir F5
+        if (event.key === 'F5') {
+            event.preventDefault();
+            alert('No puedes recargar la página mientras la impresora esté conectada. Desconéctala primero.');
+            return false;
+        }
+        
+        // Prevenir Ctrl+R (Windows/Linux) o Cmd+R (Mac)
+        if ((event.ctrlKey || event.metaKey) && event.key === 'r') {
+            event.preventDefault();
+            alert('No puedes recargar la página mientras la impresora esté conectada. Desconéctala primero.');
+            return false;
+        }
+        
+        // Prevenir Ctrl+Shift+R (Windows/Linux) o Cmd+Shift+R (Mac) - recarga forzada
+        if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === 'R') {
+            event.preventDefault();
+            alert('No puedes recargar la página mientras la impresora esté conectada. Desconéctala primero.');
+            return false;
+        }
     }
 });
 
