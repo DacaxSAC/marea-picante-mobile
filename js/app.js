@@ -93,6 +93,11 @@ export class MobileApp {
                         await this.dataManager.loadOrders();
                         this.uiManager.updateOrdersDisplay();
                     }
+                    
+                    // Resetear datos cuando se navega a nueva orden
+                    if (screen === 'new-order') {
+                        this.resetNewOrder();
+                    }
                 }
             });
         });
@@ -214,6 +219,35 @@ export class MobileApp {
          if (deliveryChargeInput) {
              deliveryChargeInput.addEventListener('input', () => {
                  this.uiManager.updateOrderPreview();
+             });
+         }
+        
+        // Switch de delivery para agregar productos
+        const deliverySwitchAdd = document.getElementById('delivery-switch-add');
+        const customerSectionAdd = document.getElementById('customer-section-add');
+        
+        if (deliverySwitchAdd && customerSectionAdd) {
+            deliverySwitchAdd.addEventListener('change', () => {
+                if (deliverySwitchAdd.checked) {
+                    customerSectionAdd.style.display = 'block';
+                } else {
+                    customerSectionAdd.style.display = 'none';
+                    // Limpiar el campo cuando se oculta
+                    const customerNameInputAdd = document.getElementById('customer-name-add');
+                    if (customerNameInputAdd) {
+                        customerNameInputAdd.value = '';
+                    }
+                }
+                // Actualizar el preview de la orden para mostrar/ocultar cargo por delivery
+                this.uiManager.updateAddOrderPreview();
+            });
+        }
+        
+        // Event listener para el campo de cargo por delivery en agregar productos
+         const deliveryChargeInputAdd = document.getElementById('delivery-charge-add');
+         if (deliveryChargeInputAdd) {
+             deliveryChargeInputAdd.addEventListener('input', () => {
+                 this.uiManager.updateAddOrderPreview();
              });
          }
         
@@ -563,6 +597,10 @@ export class MobileApp {
         this.uiManager.showLoading();
 
         try {
+            // Verificar si es delivery para agregar tapers y cargo
+            const deliverySwitchAdd = document.getElementById('delivery-switch-add');
+            const isDelivery = deliverySwitchAdd ? deliverySwitchAdd.checked : false;
+            
             // Enviar cada producto individualmente
             for (const product of selectedProducts) {
                 const productData = {
@@ -583,6 +621,99 @@ export class MobileApp {
 
                 if (!response.ok) {
                     throw new Error(`Error al agregar ${product.name} a la orden`);
+                }
+            }
+            
+            // Si es delivery, agregar tapers y cargo por delivery
+            if (isDelivery) {
+                // Calcular tapers necesarios
+                let tapersPersonales = 0;
+                let tapersFuente = 0;
+                
+                this.dataManager.selectedProducts.forEach((quantities, productId) => {
+                    const product = this.dataManager.findProductById(productId);
+                    if (product && product.categoryId !== 10 && product.categoryId !== 11) {
+                        tapersPersonales += quantities.personal || 0;
+                        tapersFuente += quantities.fuente || 0;
+                    }
+                });
+                
+                // Buscar el producto "Taper" unificado en la base de datos
+                const taperProduct = this.dataManager.data.allProducts.find(p => p.name === 'Taper');
+                
+                // Agregar tapers personales si hay cantidad
+                if (tapersPersonales > 0) {
+                    const taperPersonalData = {
+                        productId: taperProduct ? taperProduct.productId : null,
+                        quantity: tapersPersonales,
+                        unitPrice: taperProduct ? taperProduct.pricePersonal : 1.00,
+                        subtotal: tapersPersonales * (taperProduct ? taperProduct.pricePersonal : 1.00),
+                        priceType: 'personal'
+                    };
+                    
+                    const taperResponse = await fetch(`${CONFIG.API_BASE_URL}/orders/${this.targetOrderId}/products`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(taperPersonalData)
+                    });
+                    
+                    if (!taperResponse.ok) {
+                        throw new Error('Error al agregar tapers personales');
+                    }
+                }
+                
+                // Agregar tapers fuente si hay cantidad
+                if (tapersFuente > 0) {
+                    const taperFuenteData = {
+                        productId: taperProduct ? taperProduct.productId : null,
+                        quantity: tapersFuente,
+                        unitPrice: taperProduct ? taperProduct.priceFuente : 2.00,
+                        subtotal: tapersFuente * (taperProduct ? taperProduct.priceFuente : 2.00),
+                        priceType: 'fuente'
+                    };
+                    
+                    const taperResponse = await fetch(`${CONFIG.API_BASE_URL}/orders/${this.targetOrderId}/products`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(taperFuenteData)
+                    });
+                    
+                    if (!taperResponse.ok) {
+                        throw new Error('Error al agregar tapers fuente');
+                    }
+                }
+                
+                // Agregar cargo por delivery si se especificó
+                const deliveryChargeInputAdd = document.getElementById('delivery-charge-add');
+                const deliveryCharge = deliveryChargeInputAdd ? parseFloat(deliveryChargeInputAdd.value) || 0 : 0;
+                
+                if (deliveryCharge > 0) {
+                    // Buscar el producto "Delivery" en la base de datos
+                    const deliveryProduct = this.dataManager.data.allProducts.find(p => p.name === 'Delivery');
+                    
+                    const deliveryChargeData = {
+                        productId: deliveryProduct ? deliveryProduct.productId : null,
+                        quantity: 1,
+                        unitPrice: deliveryCharge,
+                        subtotal: deliveryCharge,
+                        priceType: 'personal'
+                    };
+                    
+                    const deliveryResponse = await fetch(`${CONFIG.API_BASE_URL}/orders/${this.targetOrderId}/products`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(deliveryChargeData)
+                    });
+                    
+                    if (!deliveryResponse.ok) {
+                        throw new Error('Error al agregar cargo por delivery');
+                    }
                 }
             }
 

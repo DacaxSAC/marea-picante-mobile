@@ -192,7 +192,10 @@ export class UIManager {
         const productsGrid = document.querySelector('.products-grid');
         if (!productsGrid) return;
 
-        const products = this.dataManager.getProductsByCategory(this.dataManager.currentCategoryId);
+        let products = this.dataManager.getProductsByCategory(this.dataManager.currentCategoryId);
+        
+        // Excluir el producto "Delivery" de la lista de productos a mostrar
+        products = products.filter(product => product.name !== 'Delivery');
 
         if (products.length === 0) {
             productsGrid.innerHTML = '<div class="no-products">No hay productos en esta categoría</div>';
@@ -383,7 +386,7 @@ export class UIManager {
             return;
         }
 
-        const { itemsHtml, total } = this.generateOrderSummary();
+        const { itemsHtml, total } = this.generateAddOrderSummary();
         addOrderPreview.innerHTML = itemsHtml;
 
         // Actualizar total
@@ -391,6 +394,141 @@ export class UIManager {
         if (addOrderTotal) {
             addOrderTotal.textContent = total.toFixed(2);
         }
+    }
+
+    // Generar resumen específico para agregar a orden existente
+    generateAddOrderSummary() {
+        let total = 0;
+        let itemsHtml = '';
+
+        if (this.dataManager.selectedProducts.size === 0) {
+            return { itemsHtml: '<div class="empty-order">No hay productos seleccionados</div>', total: 0 };
+        }
+
+        this.dataManager.selectedProducts.forEach((quantities, productId) => {
+            const product = this.dataManager.findProductById(productId);
+            if (product) {
+                const hasPersonalPrice = product.pricePersonal && product.pricePersonal > 0;
+                const hasFuentePrice = product.priceFuente && product.priceFuente > 0;
+                const hasBothPrices = hasPersonalPrice && hasFuentePrice;
+                
+                // Agregar item para precio personal si hay cantidad
+                if (quantities.personal > 0) {
+                    const subtotal = product.pricePersonal * quantities.personal;
+                    total += subtotal;
+                    const productName = hasBothPrices ? product.name + ' (Personal)' : product.name;
+
+                    itemsHtml += `
+                        <div class="order-item" data-product-id="${productId}" data-price-type="personal">
+                            <div class="item-info">
+                                <div class="item-left">
+                                    <button class="comment-toggle" data-product-id="${productId}" data-price-type="personal">
+                                        <span class="comment-icon">+</span>
+                                    </button>
+                                    <span class="item-name">${productName} x${quantities.personal}</span>
+                                </div>
+                                <div class="item-price">S/ ${subtotal.toFixed(2)}</div>
+                            </div>
+                            <div class="comment-input-container" style="display: none;">
+                                <input type="text" class="comment-input" placeholder="Agregar comentario..." data-product-id="${productId}" data-price-type="personal">
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Agregar item para precio fuente si hay cantidad
+                if (quantities.fuente > 0) {
+                    const subtotal = product.priceFuente * quantities.fuente;
+                    total += subtotal;
+                    const productName = hasBothPrices ? product.name + ' (Fuente)' : product.name;
+
+                    itemsHtml += `
+                        <div class="order-item" data-product-id="${productId}" data-price-type="fuente">
+                            <div class="item-info">
+                                <div class="item-left">
+                                    <button class="comment-toggle" data-product-id="${productId}" data-price-type="fuente">
+                                        <span class="comment-icon">+</span>
+                                    </button>
+                                    <span class="item-name">${productName} x${quantities.fuente}</span>
+                                </div>
+                                <span class="item-price">S/ ${subtotal.toFixed(2)}</span>
+                            </div>
+                            <div class="comment-input-container" style="display: none;">
+                                <input type="text" class="comment-input" placeholder="Agregar comentario..." data-product-id="${productId}" data-price-type="fuente">
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+        });
+
+        // Calcular y mostrar cargos por delivery si está activado (usando el switch específico para agregar)
+        const deliverySwitchAdd = document.getElementById('delivery-switch-add');
+        const isDelivery = deliverySwitchAdd ? deliverySwitchAdd.checked : false;
+        
+        if (isDelivery) {
+            let tapersPersonales = 0;
+            let tapersFuente = 0;
+            
+            // Contar la cantidad de tapers necesarios
+            this.dataManager.selectedProducts.forEach((quantities, productId) => {
+                const product = this.dataManager.findProductById(productId);
+                if (product) {
+                    // Excluir guarniciones (categoryId: 10) y bebidas (categoryId: 11)
+                    if (product.categoryId !== 10 && product.categoryId !== 11) {
+                        tapersPersonales += quantities.personal || 0;
+                        tapersFuente += quantities.fuente || 0;
+                    }
+                }
+            });
+            
+            // Mostrar tapers como un solo item si hay cantidad
+            if (tapersPersonales > 0 || tapersFuente > 0) {
+                const subtotalPersonales = tapersPersonales * 1.00;
+                const subtotalFuente = tapersFuente * 2.00;
+                const totalTapers = subtotalPersonales + subtotalFuente;
+                const cantidadTotal = tapersPersonales + tapersFuente;
+                
+                total += totalTapers;
+                itemsHtml += `
+                    <div class="order-item taper-charge">
+                        <div class="item-info">
+                            <div class="item-left">
+                                <span class="item-name">
+                                    <span class="delivery-icon">📦</span>
+                                    Tapers descartables
+                                </span>
+                                <span class="item-quantity">x${cantidadTotal}</span>
+                            </div>
+                            <div class="item-price">S/ ${totalTapers.toFixed(2)}</div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Agregar cargo por delivery si se especificó
+            const deliveryChargeInputAdd = document.getElementById('delivery-charge-add');
+            const deliveryCharge = deliveryChargeInputAdd ? parseFloat(deliveryChargeInputAdd.value) || 0 : 0;
+            
+            if (deliveryCharge > 0) {
+                total += deliveryCharge;
+                itemsHtml += `
+                    <div class="order-item delivery-charge">
+                        <div class="item-info">
+                            <div class="item-left">
+                                <span class="item-name">
+                                    <span class="delivery-icon">🚚</span>
+                                    Cargo por delivery
+                                </span>
+                            </div>
+                            <div class="item-price">S/ ${deliveryCharge.toFixed(2)}</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        return { itemsHtml, total };
     }
 
     // Generar resumen de orden
@@ -595,21 +733,33 @@ export class UIManager {
         if (!modal || !modalTitle || !modalBody) return;
 
         let itemsHtml = '';
-        order.detalles.forEach(item => {
+
+        // Separar productos de la categoría "Otros" (ID 12)
+        const otrosItems = order.detalles.filter(item => item.producto.categoryId === 12);
+        const regularItems = order.detalles.filter(item => item.producto.categoryId !== 12);
+
+        // Unir las listas con los productos de "Otros" al final
+        const sortedDetalles = [...regularItems, ...otrosItems];
+
+        sortedDetalles.forEach(item => {
             // Verificar si el producto tiene ambos precios válidos para determinar si mostrar etiquetas
             const product = item.producto;
             const hasPersonalPrice = product?.pricePersonal && product.pricePersonal > 0;
             const hasFuentePrice = product?.priceFuente && product.priceFuente > 0;
             const hasBothPrices = hasPersonalPrice && hasFuentePrice;
             
+            const isOtro = product?.categoryId === 12;
             const priceTypeLabel = hasBothPrices ? 
                 (item.priceType === 'fuente' ? ' (Fuente)' : item.priceType === 'personal' ? ' (Personal)' : '') : '';
             const priceTypeClass = item.priceType === 'fuente' ? 'price-fuente' : 'price-personal';
 
+            const borderColor = isOtro ? '#8E44AD' : (item.priceType === 'fuente' ? '#FF6B35' : '#4ECDC4');
+            const icon = isOtro ? '🥡' : (item.priceType === 'fuente' ? '🍽️' : '🍴');
+
             itemsHtml += `
-                <div class="product-item" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 0.75rem; border-left: 4px solid ${item.priceType === 'fuente' ? '#FF6B35' : '#4ECDC4'};">
+                <div class="product-item" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 0.75rem; border-left: 4px solid ${borderColor};">
                     <div style="display: flex; align-items: center; flex: 1;">
-                        <span style="font-size: 1.5rem; margin-right: 0.75rem;">${item.priceType === 'fuente' ? '🍽️' : '🍴'}</span>
+                        <span style="font-size: 1.5rem; margin-right: 0.75rem;">${icon}</span>
                         <div>
                             <div style="font-weight: 700; color: #2c3e50; font-size: 1rem; margin-bottom: 0.25rem;">${product?.name}</div>
                             <div style="font-size: 0.75rem; color: #7f8c8d; text-transform: uppercase; font-weight: 600;">${priceTypeLabel.replace(/[()]/g, '').trim() || 'Personal'}</div>

@@ -329,17 +329,16 @@ export class DataManager {
                 }
             });
             
-            // Buscar los productos de tapers en la base de datos
-            const taperPersonalProduct = this.data.allProducts.find(p => p.name === 'Taper Personal');
-            const taperFuenteProduct = this.data.allProducts.find(p => p.name === 'Taper Fuente');
+            // Buscar el producto de taper unificado en la base de datos
+            const taperProduct = this.data.allProducts.find(p => p.name === 'Taper');
             
             // Agregar tapers personales si hay cantidad
-            if (tapersPersonales > 0 && taperPersonalProduct) {
-                const subtotal = taperPersonalProduct.pricePersonal * tapersPersonales;
+            if (tapersPersonales > 0 && taperProduct) {
+                const subtotal = taperProduct.pricePersonal * tapersPersonales;
                 orderItems.push({
-                    productId: taperPersonalProduct.productId,
-                    name: 'Taper Personal',
-                    unitPrice: taperPersonalProduct.pricePersonal,
+                    productId: taperProduct.productId,
+                    name: 'Taper',
+                    unitPrice: taperProduct.pricePersonal,
                     quantity: tapersPersonales,
                     subtotal: subtotal,
                     priceType: 'personal',
@@ -349,15 +348,15 @@ export class DataManager {
             }
             
             // Agregar tapers fuente si hay cantidad
-            if (tapersFuente > 0 && taperFuenteProduct) {
-                const subtotal = taperFuenteProduct.pricePersonal * tapersFuente;
+            if (tapersFuente > 0 && taperProduct) {
+                const subtotal = taperProduct.priceFuente * tapersFuente;
                 orderItems.push({
-                    productId: taperFuenteProduct.productId,
-                    name: 'Taper Fuente',
-                    unitPrice: taperFuenteProduct.pricePersonal,
+                    productId: taperProduct.productId,
+                    name: 'Taper',
+                    unitPrice: taperProduct.priceFuente,
                     quantity: tapersFuente,
                     subtotal: subtotal,
-                    priceType: 'personal',
+                    priceType: 'fuente',
                     comment: 'Tapers descartables para productos fuente'
                 });
                 total += subtotal;

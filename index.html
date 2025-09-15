@@ -92,6 +92,20 @@
                             <div class="summary-info">
                                 <strong>Agregando productos a la orden existente</strong>
                             </div>
+                            <div class="summary-delivery">
+                                <label class="delivery-toggle">
+                                    <span class="delivery-label">¿Es delivery?</span>
+                                    <input type="checkbox" id="delivery-switch-add">
+                                    <span class="delivery-slider"></span>
+                                </label>
+                                <div class="summary-customer" id="customer-section-add" style="display: none; margin-top: 1rem;">
+                                    <input type="text" id="customer-name-add" placeholder="Nombre del cliente">
+                                    <div class="delivery-charge-input" style="margin-top: 0.5rem;">
+                                        <label for="delivery-charge-add">Cargo por delivery (S/):</label>
+                                        <input type="number" id="delivery-charge-add" min="0" step="0.01" value="0" placeholder="0.00">
+                                    </div>
+                                </div>
+                            </div>
                             <div id="add-order-items" class="order-items">
                                 <!-- Selected items will appear here -->
                             </div>
