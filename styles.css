@@ -1142,6 +1142,34 @@ body {
   margin-right: 0.25rem;
 }
 
+.order-status.paid {
+  color: #388E3C;
+  background: transparent;
+  border: none;
+  backdrop-filter: none;
+}
+
+.order-status.paid::before {
+  content: "●";
+  font-size: 1rem;
+  color: #4CAF50;
+  margin-right: 0.25rem;
+}
+
+.order-status.cancelled {
+  color: #D32F2F;
+  background: transparent;
+  border: none;
+  backdrop-filter: none;
+}
+
+.order-status.cancelled::before {
+  content: "●";
+  font-size: 1rem;
+  color: #F44336;
+  margin-right: 0.25rem;
+}
+
 /* Status badges for modal */
 .status-badge {
   display: inline-flex;

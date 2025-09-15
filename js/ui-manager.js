@@ -839,12 +839,19 @@ export class UIManager {
 
         const footer = document.createElement('div');
         footer.className = 'modal-footer';
+        
+        // Solo mostrar botón agregar si el estado no es 'paid' o 'cancelled'
+        const showAddButton = order.status !== 'PAID' && order.status !== 'CANCELLED';
+        
         footer.innerHTML = `
-            <div class="">
-                <button id="add-product-btn" class="btn-primary" data-order-id="${order.orderId}">Agregar</button>
-            </div>
-            <div class="order-total">
-                <h3>Total: S/ ${total}</h3>
+            <div style="display: flex; justify-content: ${showAddButton ? 'space-between' : 'flex-end'}; align-items: center; width: 100%;">
+                ${showAddButton ? `
+                <div class="">
+                    <button id="add-product-btn" class="btn-primary" data-order-id="${order.orderId}">Agregar</button>
+                </div>` : ''}
+                <div class="order-total">
+                    <h3>Total: S/ ${total}</h3>
+                </div>
             </div>
         `;
 
