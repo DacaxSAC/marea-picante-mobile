@@ -543,4 +543,16 @@ export class DataManager {
         await this.loadProducts();
         console.log('Datos recargados forzosamente desde la API');
     }
+
+    // Obtener estado actual de la caja
+    async getCashRegisterStatus() {
+        try {
+            const response = await this.apiService.getCurrentCashRegister();
+            // El backend devuelve { cashRegister: {...} }
+            return response.cashRegister;
+        } catch (error) {
+            console.error('Error al obtener estado de la caja:', error);
+            return null;
+        }
+    }
 }

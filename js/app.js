@@ -24,6 +24,9 @@ export class MobileApp {
             // Cargar órdenes desde el backend
             await this.dataManager.loadOrders();
             
+            // Cargar estado de la caja
+            await this.updateCashRegisterStatus();
+            
             // Configurar eventos
             this.setupEventListeners();
             
@@ -404,7 +407,12 @@ export class MobileApp {
             this.uiManager.switchScreen('orders');
         } catch (error) {
             console.error('Error al crear orden:', error);
-            this.uiManager.showError('Error al crear la orden');
+            // Mostrar mensaje específico si es error de caja cerrada
+            if (error.message && error.message.includes('caja debe estar abierta')) {
+                this.uiManager.showError('No se puede crear la orden: La caja debe estar abierta para procesar órdenes');
+            } else {
+                this.uiManager.showError('Error al crear la orden');
+            }
         } finally {
             // Ocultar loader y rehabilitar botones
             this.uiManager.hideLoading();
@@ -554,6 +562,9 @@ export class MobileApp {
             await this.loadAllData();
             await this.dataManager.loadOrders();
             
+            // Actualizar estado de la caja
+            await this.updateCashRegisterStatus();
+            
             // Actualizar la UI
             this.uiManager.renderTables();
             this.uiManager.renderProducts();
@@ -569,6 +580,39 @@ export class MobileApp {
     // Refrescar solo mesas
     async refreshTables() {
         await this.loadTables();
+    }
+
+    // Actualizar estado de la caja
+    async updateCashRegisterStatus() {
+        try {
+            const cashRegister = await this.dataManager.getCashRegisterStatus();
+            this.updateCashRegisterUI(cashRegister);
+        } catch (error) {
+            console.error('Error al verificar estado de la caja:', error);
+            this.updateCashRegisterUI(null);
+        }
+    }
+
+    // Actualizar UI del estado de la caja
+    updateCashRegisterUI(cashRegister) {
+        const statusElement = document.getElementById('cash-register-status');
+        const textElement = statusElement?.querySelector('.cash-text');
+        
+        if (statusElement && textElement) {
+            // Remover clases anteriores
+            statusElement.classList.remove('open', 'closed', 'loading');
+            
+            if (cashRegister && cashRegister.status === 'ABIERTA') {
+                statusElement.classList.add('open');
+                textElement.textContent = 'Caja Abierta';
+            } else if (cashRegister && cashRegister.status === 'CERRADA') {
+                statusElement.classList.add('closed');
+                textElement.textContent = 'Caja Cerrada';
+            } else {
+                statusElement.classList.add('closed');
+                textElement.textContent = 'Caja Cerrada';
+            }
+        }
     }
 
     showProductSelector(orderId) {

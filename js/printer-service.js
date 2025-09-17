@@ -427,7 +427,7 @@ export class PrinterService {
             // Si no es delivery, mostrar "MESA:" o "MESAS:" según la cantidad
             const tableLabel = order.tables.length === 1 ? 'MESA:' : 'MESAS:';
             ticket += cmd.BOLD_ON + cmd.DOUBLE_HEIGHT;
-            ticket += this.formatText(`${tableLabel} ${order.tables.sort((a,b) => a - b).join(', ')}`, 'center');
+            ticket += this.formatText(`${tableLabel} ${order.tables.map(t => t.number || t).sort((a,b) => a - b).join(', ')}`, 'center');
             ticket += cmd.BOLD_OFF + cmd.NORMAL_SIZE;
         }
 

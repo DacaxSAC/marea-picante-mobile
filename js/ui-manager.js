@@ -866,7 +866,20 @@ export class UIManager {
     // Actualizar display de órdenes
     updateOrdersDisplay() {
         const ordersContainer = document.querySelector('.orders-list');
+        const ordersCountElement = document.querySelector('#orders-count');
+        
         if (!ordersContainer) return;
+
+        // Filtrar solo órdenes pendientes y en progreso para el contador
+        const activeOrders = this.dataManager.orders.filter(order => 
+            order.status === 'PENDING' || order.status === 'IN_PROGRESS'
+        );
+        
+        // Actualizar contador de órdenes activas
+        if (ordersCountElement) {
+            const count = activeOrders.length;
+            ordersCountElement.textContent = `${count} ${count === 1 ? 'orden' : 'órdenes'}`;
+        }
 
         if (this.dataManager.orders.length === 0) {
             ordersContainer.innerHTML = '<div class="no-orders">No hay órdenes registradas</div>';
@@ -876,13 +889,13 @@ export class UIManager {
         ordersContainer.innerHTML = '';
 
         this.dataManager.orders.forEach(order => {
-            const total = order.detalles.reduce((sum, item) => sum + Number(item.subtotal), 0).toFixed(2)
+            const total = order.orderDetails.reduce((sum, item) => sum + Number(item.subtotal), 0).toFixed(2)
             const orderElement = document.createElement('div');
             orderElement.className = 'order-item';
             orderElement.innerHTML = `
                 <div class="order-card" data-order-id="${order.orderId}" style="cursor: pointer;">
                     <div class="order-info">
-                        <div class="order-tables">${(order.isDelivery || order.tables.length === 0) ? 'Para Llevar' : `Mesa(s): ${order.tables.sort((a, b) => a.number - b.number).map(t => t.number).join(', ')}`}</div>
+                        <div class="order-tables">${(order.isDelivery || !order.tables || order.tables.length === 0) ? 'Para Llevar' : `Mesa(s): ${order.tables.sort((a, b) => a.number - b.number).map(t => t.number).join(', ')}`}</div>
                         <div class="order-time">${this.formatTime(order.timestamp)}</div>
                     </div>
                     
@@ -909,7 +922,7 @@ export class UIManager {
     viewOrderDetail(orderId) {
         const order = this.dataManager.orders.find(o => o.orderId === orderId);
         if (!order) return;
-        const total = order.detalles.reduce((sum, item) => sum + Number(item.subtotal), 0).toFixed(2)
+        const total = order.orderDetails.reduce((sum, item) => sum + Number(item.subtotal), 0).toFixed(2)
 
         const modal = document.querySelector('#order-modal');
         const modalTitle = document.querySelector('#modal-title');
@@ -920,13 +933,13 @@ export class UIManager {
         let itemsHtml = '';
 
         // Separar productos de la categoría "Otros" (ID 12)
-        const otrosItems = order.detalles.filter(item => item.producto.categoryId === 12);
-        const regularItems = order.detalles.filter(item => item.producto.categoryId !== 12);
+        const otrosItems = order.orderDetails.filter(item => item.producto.categoryId === 12);
+        const regularItems = order.orderDetails.filter(item => item.producto.categoryId !== 12);
 
         // Unir las listas con los productos de "Otros" al final
-        const sortedDetalles = [...regularItems, ...otrosItems];
+        const sortedOrderDetails = [...regularItems, ...otrosItems];
 
-        sortedDetalles.forEach(item => {
+        sortedOrderDetails.forEach(item => {
             // Verificar si el producto tiene ambos precios válidos para determinar si mostrar etiquetas
             const product = item.producto;
             const hasPersonalPrice = product?.pricePersonal && product.pricePersonal > 0;
@@ -972,10 +985,10 @@ export class UIManager {
                     </div>
                 </div>
                 <div class="info-item" style="display: flex; align-items: center; padding: 0.75rem; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <span style="font-size: 1.2rem; margin-right: 0.5rem;">${(order.isDelivery || order.tables.length === 0) ? '🥡' : '🪑'}</span>
+                    <span style="font-size: 1.2rem; margin-right: 0.5rem;">${(order.isDelivery || !order.tables || order.tables.length === 0) ? '🥡' : '🪑'}</span>
                     <div>
-                        <div style="font-size: 0.75rem; color: #6c757d; text-transform: uppercase; font-weight: 600;">${(order.isDelivery || order.tables.length === 0) ? 'Orden' : 'Mesa(s)'}</div>
-                        <div style="font-weight: 600; color: #495057;">${(order.isDelivery || order.tables.length === 0) ? 'Para Llevar' : order.tables.sort((a, b) => a.number - b.number).map(t => t.number).join(', ')}</div>
+                        <div style="font-size: 0.75rem; color: #6c757d; text-transform: uppercase; font-weight: 600;">${(order.isDelivery || !order.tables || order.tables.length === 0) ? 'Orden' : 'Mesa(s)'}</div>
+                        <div style="font-weight: 600; color: #495057;">${(order.isDelivery || !order.tables || order.tables.length === 0) ? 'Para Llevar' : order.tables.sort((a, b) => a.number - b.number).map(t => t.number).join(', ')}</div>
                     </div>
                 </div>
             </div>

@@ -18,7 +18,17 @@ export class ApiService {
             });
             
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                // Intentar obtener el mensaje de error del servidor
+                let errorMessage = `HTTP error! status: ${response.status}`;
+                try {
+                    const errorText = await response.text();
+                    if (errorText) {
+                        errorMessage = errorText;
+                    }
+                } catch (parseError) {
+                    // Si no se puede parsear el error, usar el mensaje por defecto
+                }
+                throw new Error(errorMessage);
             }
             
             return await response.json();
@@ -70,6 +80,11 @@ export class ApiService {
             method: 'POST',
             body: JSON.stringify(orderDetail)
         });
+    }
+
+    // Obtener estado actual de la caja
+    async getCurrentCashRegister() {
+        return this.makeRequest('/cash-movements/current-register');
     }
 
 }
