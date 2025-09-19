@@ -300,8 +300,8 @@ export class MobileApp {
             
             // Botón agregar producto en modal de orden
             if (e.target.id === 'add-product-btn') {
-                const orderId = parseInt(e.target.dataset.orderId);
-                this.showProductSelector(orderId);
+                const orderData = JSON.parse(e.target.dataset.order.replace(/&apos;/g, "'"));
+                this.showProductSelector(orderData);
             }
             
             // Botón cancelar agregar producto
@@ -340,10 +340,14 @@ export class MobileApp {
     }
 
     // Manejar acción de continuar
-    handleContinueAction() {
+    async handleContinueAction() {
         if (this.dataManager.currentStep === 'tables') {
             if (this.dataManager.selectedTables.length > 0) {
-                this.uiManager.goToStep('products');
+                // Validar que las mesas seleccionadas no estén ocupadas
+                const isValid = await this.validateSelectedTables();
+                if (isValid) {
+                    this.uiManager.goToStep('products');
+                }
             }
         } else if (this.dataManager.currentStep === 'products') {
             if (this.dataManager.selectedProducts.size > 0) {
@@ -357,6 +361,60 @@ export class MobileApp {
                     this.uiManager.updateOrderPreview();
                 }
             }
+        }
+    }
+
+    // Validar que las mesas seleccionadas no estén ocupadas
+    async validateSelectedTables() {
+        const continueBtn = document.querySelector('#step-tables .continue-btn');
+        const originalText = continueBtn.textContent;
+        
+        try {
+            // Mostrar loader
+            continueBtn.disabled = true;
+            continueBtn.textContent = 'Verificando mesas...';
+            
+            // Recargar el estado actual de las mesas desde el backend
+            await this.loadTables();
+            
+            // Verificar si alguna mesa seleccionada está ocupada
+            const occupiedTables = [];
+            for (const tableNumber of this.dataManager.selectedTables) {
+                // Excluir mesa 0 (para llevar) de la validación
+                if (tableNumber === 0) continue;
+                
+                const table = this.dataManager.tables.find(t => (t.number || t.id) === tableNumber);
+                if (table && table.state === 2) {
+                    occupiedTables.push(tableNumber);
+                }
+            }
+            
+            if (occupiedTables.length > 0) {
+                alert(`Las siguientes mesas están ocupadas: ${occupiedTables.join(', ')}. Por favor, selecciona otras mesas.`);
+                // Remover las mesas ocupadas de la selección
+                occupiedTables.forEach(tableNumber => {
+                    const index = this.dataManager.selectedTables.indexOf(tableNumber);
+                    if (index > -1) {
+                        this.dataManager.selectedTables.splice(index, 1);
+                    }
+                });
+                // Actualizar la UI
+                this.uiManager.renderTables();
+                this.uiManager.updateContinueButton();
+                return false;
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('Error al validar mesas:', error);
+            alert('Error al verificar el estado de las mesas. Inténtalo de nuevo.');
+            return false;
+        } finally {
+            // Restaurar el botón
+            continueBtn.textContent = originalText;
+            continueBtn.disabled = false;
+            // Actualizar el estado del botón según las validaciones
+            this.uiManager.updateContinueButton();
         }
     }
 
@@ -423,8 +481,6 @@ export class MobileApp {
         }
     }
 
-
-
     // Resetear nueva orden
     resetNewOrder() {
         this.dataManager.resetNewOrder();
@@ -432,6 +488,8 @@ export class MobileApp {
         this.uiManager.switchScreen('new-order');
         this.uiManager.renderTables();
         this.uiManager.renderProducts();
+        this.uiManager.updateOrderPreview();
+        this.uiManager.updateAddOrderPreview();
         this.uiManager.updateContinueButton();
     }
 
@@ -615,13 +673,36 @@ export class MobileApp {
         }
     }
 
-    showProductSelector(orderId) {
+    showProductSelector(orderData) {
         this.addingToExistingOrder = true;
-        this.targetOrderId = orderId;
+        this.targetOrderId = orderData.orderId;
+        this.currentOrderInfo = orderData;
         this.uiManager.closeModal();
         this.dataManager.clearSelectedProducts();
         this.uiManager.switchScreen('new-order');
         this.uiManager.goToStep('products');
+        
+        // Configurar el switch de delivery basado en la orden
+        const deliverySwitch = document.getElementById('delivery-switch-add');
+        const customerSection = document.getElementById('customer-section-add');
+        const customerNameInput = document.getElementById('customer-name-add');
+        
+        if (deliverySwitch && customerSection && customerNameInput) {
+            const isDelivery = orderData.isDelivery || (!orderData.tables || orderData.tables.length === 0);
+            
+            deliverySwitch.checked = isDelivery;
+            deliverySwitch.disabled = isDelivery; // Deshabilitar si ya es delivery
+            
+            if (isDelivery) {
+                customerSection.style.display = 'block';
+                customerNameInput.value = orderData.customerName || '';
+            } else {
+                customerSection.style.display = 'none';
+                customerNameInput.value = '';
+            }
+        }
+        
+        this.uiManager.updateAddingToOrderIndicator();
     }
 
     hideProductSelector() {
@@ -641,6 +722,12 @@ export class MobileApp {
         const selectedProducts = this.dataManager.getSelectedProducts();
         if (selectedProducts.length === 0) {
             this.uiManager.showError('No hay productos seleccionados');
+            return;
+        }
+
+        // Verificar si la impresora está conectada cuando la impresión automática está habilitada
+        if (CONFIG.PRINTER.ENABLED && CONFIG.PRINTER.AUTO_PRINT && !this.printerService.isConnected) {
+            this.uiManager.showError('Conecta la impresora antes de agregar productos');
             return;
         }
 
@@ -775,8 +862,81 @@ export class MobileApp {
                 }
             }
 
-            this.uiManager.showSuccess('Productos agregados a la orden exitosamente');
+            // Obtener la orden actualizada para imprimir ticket de cocina
+            const updatedOrderResponse = await fetch(`${CONFIG.API_BASE_URL}/orders/${this.targetOrderId}`);
+            if (updatedOrderResponse.ok) {
+                const updatedOrder = await updatedOrderResponse.json();
+                
+                // Imprimir ticket de cocina automáticamente si está habilitado y la impresora está conectada
+                if (CONFIG.PRINTER.ENABLED && CONFIG.PRINTER.AUTO_PRINT && this.printerService.isConnected) {
+                    try {
+                        console.log('🖨️ Imprimiendo ticket de cocina para productos agregados...');
+                        
+                        // Preparar solo los productos agregados para el ticket de cocina
+                        const addedProductsForTicket = selectedProducts.map(product => ({
+                            name: product.name,
+                            quantity: product.quantity,
+                            comment: product.comment || '',
+                            priceType: product.priceType || 'personal',
+                            product: {
+                                name: product.name
+                            }
+                        }));
+                        
+                        // Usar el nuevo método que solo imprime productos agregados
+                        await this.printerService.printKitchenTicketForAddedProducts(updatedOrder, addedProductsForTicket);
+                        this.uiManager.showSuccess('Productos agregados y ticket de cocina impreso exitosamente');
+                    } catch (printError) {
+                        console.error('❌ Error al imprimir ticket de cocina:', printError);
+                        this.uiManager.showSuccess('Productos agregados exitosamente');
+                        this.uiManager.showError('Productos agregados pero falló la impresión del ticket de cocina');
+                    }
+                } else {
+                    this.uiManager.showSuccess('Productos agregados a la orden exitosamente');
+                    if (CONFIG.PRINTER.ENABLED && CONFIG.PRINTER.AUTO_PRINT && !this.printerService.isConnected) {
+                        this.uiManager.showError('Conecta la impresora para impresión automática');
+                    }
+                }
+            } else {
+                this.uiManager.showSuccess('Productos agregados a la orden exitosamente');
+            }
+            
+            // Limpiar todo después de agregar productos
             this.dataManager.clearSelectedProducts();
+            
+            // Limpiar campos específicos de la sección de agregar productos
+            const deliverySwitchAddClean = document.getElementById('delivery-switch-add');
+            const customerNameInputAddClean = document.getElementById('customer-name-add');
+            const deliveryChargeInputAddClean = document.getElementById('delivery-charge-add');
+            const customerSectionAddClean = document.getElementById('customer-section-add');
+            
+            if (deliverySwitchAddClean) {
+                deliverySwitchAddClean.checked = false;
+            }
+            
+            if (customerNameInputAddClean) {
+                customerNameInputAddClean.value = '';
+            }
+            
+            if (deliveryChargeInputAddClean) {
+                deliveryChargeInputAddClean.value = '0';
+            }
+            
+            if (customerSectionAddClean) {
+                customerSectionAddClean.style.display = 'none';
+            }
+            
+            // Limpiar comentarios de productos
+            document.querySelectorAll('.comment-input').forEach(input => {
+                input.value = '';
+            });
+            
+            // Actualizar la interfaz visual para reflejar la limpieza
+            this.uiManager.renderProducts();
+            this.uiManager.updateOrderPreview();
+            this.uiManager.updateAddOrderPreview();
+            this.uiManager.updateContinueButton();
+            
             this.addingToExistingOrder = false;
             this.targetOrderId = null;
             this.uiManager.switchScreen('orders');

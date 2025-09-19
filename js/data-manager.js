@@ -447,6 +447,45 @@ export class DataManager {
         this.data.selectedTables = [];
         this.data.selectedProducts.clear();
         this.data.currentStep = CONFIG.DEFAULT_STEP;
+        
+        // Limpiar campos de delivery y cliente (formulario principal)
+        const deliverySwitch = document.getElementById('delivery-switch');
+        const customerNameInput = document.getElementById('customer-name');
+        const deliveryChargeInput = document.getElementById('delivery-charge');
+        const customerSection = document.getElementById('customer-section');
+        
+        if (deliverySwitch) {
+            deliverySwitch.checked = false;
+        }
+        
+        if (customerNameInput) {
+            customerNameInput.value = '';
+        }
+        
+        if (deliveryChargeInput) {
+            deliveryChargeInput.value = '0';
+        }
+        
+        if (customerSection) {
+            customerSection.style.display = 'none';
+        }
+        
+        // Limpiar campos de delivery y cliente (formulario de agregar productos)
+        const deliverySwitchAdd = document.getElementById('delivery-switch-add');
+        const customerNameInputAdd = document.getElementById('customer-name-add');
+        const customerSectionAdd = document.getElementById('customer-section-add');
+        
+        if (deliverySwitchAdd) {
+            deliverySwitchAdd.checked = false;
+        }
+        
+        if (customerNameInputAdd) {
+            customerNameInputAdd.value = '';
+        }
+        
+        if (customerSectionAdd) {
+            customerSectionAdd.style.display = 'none';
+        }
     }
 
     clearSelectedProducts() {

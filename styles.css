@@ -826,6 +826,26 @@ body {
   transform: translateX(26px);
 }
 
+/* Estilos para switch disabled pero checked (para llevar) */
+.delivery-toggle input[type="checkbox"]:disabled:checked + .delivery-slider {
+  background-color: var(--primary-color);
+  opacity: 1;
+}
+
+.delivery-toggle input[type="checkbox"]:disabled:checked + .delivery-slider:before {
+  transform: translateX(26px);
+  opacity: 1;
+}
+
+.delivery-toggle input[type="checkbox"]:disabled + .delivery-slider {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.delivery-toggle input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+}
+
 /* Comment toggle styles */
 .order-item {
   display: flex;

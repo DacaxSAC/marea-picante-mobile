@@ -7,6 +7,47 @@ export class UIManager {
         this.app = app;
     }
 
+    // Sincronizar estado de la sección delivery
+    syncDeliverySection() {
+        // No afectar la sección de agregar a orden existente (summary-delivery-add)
+        // Solo manejar las secciones de nueva orden
+        const summaryDelivery2 = document.getElementById('summary-delivery-2');
+        const deliverySwitch = document.getElementById('delivery-switch');
+        
+        if (deliverySwitch && summaryDelivery2) {
+            const hasTakeaway = this.dataManager.selectedTables.includes(0);
+            
+            if (hasTakeaway) {
+                // Mesa 0 (para llevar) seleccionada: mostrar sección delivery
+                summaryDelivery2.style.display = 'block';
+                deliverySwitch.checked = true;
+                deliverySwitch.disabled = true;
+                
+                // Mostrar la sección de cliente
+                const customerSection = document.getElementById('customer-section');
+                if (customerSection) {
+                    customerSection.style.display = 'block';
+                }
+            } else {
+                // Mesa numerada seleccionada o ninguna: ocultar sección delivery
+                summaryDelivery2.style.display = 'none';
+                deliverySwitch.checked = false;
+                deliverySwitch.disabled = false;
+                
+                // Ocultar la sección de cliente
+                const customerSection = document.getElementById('customer-section');
+                if (customerSection) {
+                    customerSection.style.display = 'none';
+                    // Limpiar el campo de nombre del cliente
+                    const customerNameInput = document.getElementById('customer-name');
+                    if (customerNameInput) {
+                        customerNameInput.value = '';
+                    }
+                }
+            }
+        }
+    }
+
     // Mostrar loading
     showLoading() {
         const loadingElement = document.getElementById('loading');
@@ -131,6 +172,9 @@ export class UIManager {
                 tablesGrid.appendChild(tableElement);
             });
         }
+        
+        // Sincronizar estado de la sección delivery después de renderizar
+        this.syncDeliverySection();
     }
 
     // Obtener texto de estado de mesa
@@ -166,36 +210,7 @@ export class UIManager {
         this.dataManager.toggleTableSelection(tableNumber);
         this.renderTables();
         this.updateContinueButton();
-        
-        // Si se selecciona mesa 0 (para llevar), activar y deshabilitar el switch de delivery
-        const deliverySwitch = document.getElementById('delivery-switch');
-        if (deliverySwitch) {
-            if (this.dataManager.selectedTables.includes(0)) {
-                deliverySwitch.checked = true;
-                deliverySwitch.disabled = true;
-                // Mostrar la sección de cliente
-                const customerSection = document.getElementById('customer-section');
-                if (customerSection) {
-                    customerSection.style.display = 'block';
-                }
-            } else {
-                deliverySwitch.disabled = false;
-                // Si no hay mesa 0 seleccionada, ocultar la sección de cliente si el switch está desactivado
-                if (!deliverySwitch.checked) {
-                    const customerSection = document.getElementById('customer-section');
-                    if (customerSection) {
-                        customerSection.style.display = 'none';
-                        // Limpiar el campo de nombre del cliente
-                        const customerNameInput = document.getElementById('customer-name');
-                        if (customerNameInput) {
-                            customerNameInput.value = '';
-                        }
-                    }
-                }
-            }
-            // Actualizar el preview de la orden
-            this.updateOrderPreview();
-        }
+        this.updateOrderPreview();
     }
 
     // Renderizar categorías
@@ -933,15 +948,15 @@ export class UIManager {
         let itemsHtml = '';
 
         // Separar productos de la categoría "Otros" (ID 12)
-        const otrosItems = order.orderDetails.filter(item => item.producto.categoryId === 12);
-        const regularItems = order.orderDetails.filter(item => item.producto.categoryId !== 12);
+        const otrosItems = order.orderDetails.filter(item => item.product.categoryId === 12);
+        const regularItems = order.orderDetails.filter(item => item.product.categoryId !== 12);
 
         // Unir las listas con los productos de "Otros" al final
         const sortedOrderDetails = [...regularItems, ...otrosItems];
 
         sortedOrderDetails.forEach(item => {
             // Verificar si el producto tiene ambos precios válidos para determinar si mostrar etiquetas
-            const product = item.producto;
+            const product = item.product;
             const hasPersonalPrice = product?.pricePersonal && product.pricePersonal > 0;
             const hasFuentePrice = product?.priceFuente && product.priceFuente > 0;
             const hasBothPrices = hasPersonalPrice && hasFuentePrice;
@@ -1045,7 +1060,7 @@ export class UIManager {
             <div style="display: flex; justify-content: ${showAddButton ? 'space-between' : 'flex-end'}; align-items: center; width: 100%;">
                 ${showAddButton ? `
                 <div class="">
-                    <button id="add-product-btn" class="btn-primary" data-order-id="${order.orderId}">Agregar</button>
+                    <button id="add-product-btn" class="btn-primary" data-order='${JSON.stringify(order).replace(/'/g, "&apos;")}'>Agregar</button>
                 </div>` : ''}
                 <div class="order-total">
                     <h3>Total: S/ ${total}</h3>

@@ -23,6 +23,24 @@ export class PrinterService {
         this.checkSavedDevice();
     }
 
+    // Formatear ticket para mostrar en consola
+    formatTicketForConsole(ticketData) {
+        // Convertir Uint8Array a string legible
+        let text = '';
+        for (let i = 0; i < ticketData.length; i++) {
+            const byte = ticketData[i];
+            // Filtrar comandos ESC/POS y mostrar solo texto imprimible
+            if (byte >= 32 && byte <= 126) {
+                text += String.fromCharCode(byte);
+            } else if (byte === 10) { // Line feed
+                text += '\n';
+            } else if (byte === 13) { // Carriage return
+                // Ignorar
+            }
+        }
+        return text;
+    }
+
     // Verificar si Bluetooth está disponible
     isBluetoothAvailable() {
         return 'bluetooth' in navigator;
@@ -453,17 +471,16 @@ export class PrinterService {
         ticket += cmd.BOLD_OFF;
         ticket += cmd.FEED_LINE;
         
-        order.items.forEach(item => {
+        (order.items || order.orderDetails).forEach(item => {
+            let productName = item.name || item.product.name;
+
             // Filtrar cargos por delivery - no mostrar en ticket de cocina
-            if (item.name && (item.name.toLowerCase().includes('delivery') || 
-                             item.name.toLowerCase().includes('domicilio') ||
-                             item.name.toLowerCase().includes('envío') ||
-                             item.name.toLowerCase().includes('taper'))) {
+            if (productName && (productName.toLowerCase().includes('delivery') || 
+                             productName.toLowerCase().includes('domicilio') ||
+                             productName.toLowerCase().includes('envío') ||
+                             productName.toLowerCase().includes('taper'))) {
                 return; // Saltar este item
             }
-            
-            // Formatear nombre según tipo de precio
-            let productName = item.name;
             
             // Remover (Personal) o (Fuente) del nombre
             productName = productName.replace(/ \(Personal\)$/, '').replace(/ \(Fuente\)$/, '');
@@ -537,6 +554,16 @@ export class PrinterService {
         try {
             console.log('🖨️ Iniciando impresión de ticket de cocina...');
             
+            // Generar ticket de cocina
+            const ticket = this.generateKitchenTicket(order);
+            
+            // Mostrar en consola cómo se vería el ticket en papel
+            console.log('📄 VISTA PREVIA DEL TICKET DE COCINA:');
+            console.log('=====================================');
+            const ticketPreview = this.formatTicketForConsole(ticket);
+            console.log(ticketPreview);
+            console.log('=====================================');
+            
             // Conectar si no está conectado
             if (!this.isConnected) {
                 await this.connect();
@@ -547,9 +574,6 @@ export class PrinterService {
                 throw new Error('Impresora no conectada');
             }
             
-            // Generar ticket de cocina
-            const ticket = this.generateKitchenTicket(order);
-            
             // Enviar a impresora
             await this.sendData(ticket);
             
@@ -557,6 +581,49 @@ export class PrinterService {
             return true;
         } catch (error) {
             console.error('❌ Error al imprimir ticket de cocina:', error);
+            throw error;
+        }
+    }
+
+    // Imprimir ticket de cocina solo para productos agregados
+    async printKitchenTicketForAddedProducts(order, addedProducts) {
+        try {
+            console.log('🖨️ Iniciando impresión de ticket de cocina para productos agregados...');
+            
+            // Crear una orden temporal solo con los productos agregados
+            const orderForAddedProducts = {
+                ...order,
+                items: addedProducts,
+                orderDetails: addedProducts
+            };
+            
+            // Generar ticket de cocina solo para productos agregados
+            const ticket = this.generateKitchenTicket(orderForAddedProducts);
+            
+            // Mostrar en consola cómo se vería el ticket en papel
+            console.log('📄 VISTA PREVIA DEL TICKET DE COCINA (PRODUCTOS AGREGADOS):');
+            console.log('========================================================');
+            const ticketPreview = this.formatTicketForConsole(ticket);
+            console.log(ticketPreview);
+            console.log('========================================================');
+            
+            // Conectar si no está conectado
+            if (!this.isConnected) {
+                await this.connect();
+            }
+            
+            // Verificar que la impresora esté conectada
+            if (!this.isConnected || !this.characteristic) {
+                throw new Error('Impresora no conectada');
+            }
+            
+            // Enviar a impresora
+            await this.sendData(ticket);
+            
+            console.log('✅ Ticket de cocina para productos agregados impreso exitosamente');
+            return true;
+        } catch (error) {
+            console.error('❌ Error al imprimir ticket de cocina para productos agregados:', error);
             throw error;
         }
     }
