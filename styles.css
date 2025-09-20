@@ -1455,7 +1455,7 @@ body {
 .step-actions {
   background: none;
   position: sticky;
-  bottom: 45px;
+  bottom: 55px;
   z-index: 50;
   padding: 1rem;
   background: var(--background);
