@@ -2018,6 +2018,112 @@ body {
     border: 1px solid var(--border-color);
 }
 
+/* Connected Printers List */
+.connected-printers {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--background-color);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.connected-printers h4 {
+    margin: 0 0 1rem 0;
+    color: var(--text-color);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.printer-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+}
+
+.printer-item:last-child {
+    margin-bottom: 0;
+}
+
+.printer-item.active {
+    border-color: var(--primary-color);
+    background: #f8f9ff;
+}
+
+.printer-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+}
+
+.printer-name {
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.printer-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.printer-badge.active {
+    background: #d4edda;
+    color: #155724;
+}
+
+.printer-badge.connected {
+    background: #cce5ff;
+    color: #004085;
+}
+
+.printer-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.printer-actions button {
+    padding: 0.4rem 0.8rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-activate {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-activate:hover {
+    background: #0056b3;
+}
+
+.btn-disconnect {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-disconnect:hover {
+    background: #c82333;
+}
+
+.btn-activate:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
 .setting-item {
     display: flex;
     align-items: center;

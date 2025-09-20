@@ -183,17 +183,24 @@
                     </div>
                     <div class="settings-content">
                         <div class="settings-section">
-                            <h3>🖨️ Impresora Bluetooth</h3>
+                            <h3>🖨️ Impresoras Bluetooth</h3>
                             <div class="printer-controls">
                                 <div class="printer-status">
-                                    <span id="printer-status-text">Desconectada</span>
+                                    <span id="printer-status-text">Ninguna conectada</span>
                                     <div id="printer-status-indicator" class="status-indicator offline"></div>
                                 </div>
                                 <div class="printer-buttons">
-                                    <button id="connect-printer-btn" class="btn-secondary">Conectar Impresora</button>
-                                    <button id="disconnect-printer-btn" class="btn-secondary" disabled>Desconectar</button>
+                                    <button id="connect-printer-btn" class="btn-secondary">Conectar Nueva Impresora</button>
+                                    <button id="disconnect-all-btn" class="btn-secondary" disabled>Desconectar Todas</button>
                                     <button id="test-print-btn" class="btn-secondary" disabled>Imprimir Prueba</button>
                                 </div>
+                                
+                                <!-- Lista de impresoras conectadas -->
+                                <div id="connected-printers-list" class="connected-printers" style="display: none;">
+                                    <h4>Impresoras Conectadas:</h4>
+                                    <div id="printers-container"></div>
+                                </div>
+                                
                                 <div class="printer-settings">
                                     <label class="setting-item">
                                         <input type="checkbox" id="auto-print-checkbox" checked>
