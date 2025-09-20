@@ -425,6 +425,12 @@ export class MobileApp {
             return this.addProductToExistingOrder();
         }
 
+        // Verificar si la impresora está conectada cuando está habilitada
+        if (CONFIG.PRINTER.ENABLED && !this.printerService.isConnected) {
+            this.uiManager.showError('La impresora debe estar conectada para crear órdenes');
+            return;
+        }
+
         // Deshabilitar botones de crear orden
         const createOrderBtns = document.querySelectorAll('.create-order-btn, #create-order');
         createOrderBtns.forEach(btn => {
