@@ -390,8 +390,8 @@ export class UIManager {
             if (currentStep === 'tables') {
                 // En el paso de mesas, habilitar si hay mesas seleccionadas y la impresora está conectada (si es requerida)
                 const hasSelectedTables = this.dataManager.selectedTables.length > 0;
-                // const isPrinterConnected = !CONFIG.PRINTER.ENABLED || this.app.printerService.isConnected;
-                shouldEnable = hasSelectedTables; // && isPrinterConnected;
+                const isPrinterConnected = !CONFIG.PRINTER.ENABLED || this.app.printerService.isConnected;
+                shouldEnable = hasSelectedTables && isPrinterConnected;
             } else if (currentStep === 'products') {
                 // En el paso de productos, habilitar si hay productos seleccionados
                 shouldEnable = this.dataManager.selectedProducts.size > 0;
