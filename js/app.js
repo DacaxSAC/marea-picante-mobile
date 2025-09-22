@@ -181,6 +181,7 @@ export class MobileApp {
         const connectPrinterBtn = document.getElementById('connect-printer-btn');
         const disconnectAllBtn = document.getElementById('disconnect-all-btn');
         const testPrintBtn = document.getElementById('test-print-btn');
+        const rotatePrinterBtn = document.getElementById('rotate-printer-btn');
         const autoPrintCheckbox = document.getElementById('auto-print-checkbox');
         
         if (connectPrinterBtn) {
@@ -198,6 +199,12 @@ export class MobileApp {
         if (testPrintBtn) {
             testPrintBtn.addEventListener('click', () => {
                 this.printTestTicket();
+            });
+        }
+        
+        if (rotatePrinterBtn) {
+            rotatePrinterBtn.addEventListener('click', () => {
+                this.rotateToNextPrinter();
             });
         }
         
