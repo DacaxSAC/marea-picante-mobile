@@ -4,13 +4,11 @@
 import { CONFIG } from './config.js';
 import { DataManager } from './data-manager.js';
 import { UIManager } from './ui-manager.js';
-import { MultiPrinterService } from './multi-printer-service.js';
 
 export class MobileApp {
     constructor() {
         this.dataManager = new DataManager();
         this.uiManager = new UIManager(this.dataManager, this);
-        this.printerService = new MultiPrinterService();
         this.addingToExistingOrder = false;
         this.targetOrderId = null;
         this.init();
@@ -34,14 +32,6 @@ export class MobileApp {
             this.uiManager.hideLoading();
             this.uiManager.renderProducts();
             this.uiManager.updateOrdersDisplay();
-            
-            // Verificar soporte de Bluetooth
-            this.checkBluetoothSupport();
-            
-            // Verificar si las impresoras se reconectaron automáticamente
-            setTimeout(() => {
-                this.updatePrinterUI();
-            }, 1000); // Dar tiempo para la reconexión automática
             
         } catch (error) {
             console.error('Error al inicializar la aplicación:', error);
@@ -177,36 +167,7 @@ export class MobileApp {
         // Botón confirmar agregar productos a orden existente
         const confirmAddBtn = document.getElementById('confirm-add-to-order');
         
-        // Controles de impresora
-        const connectPrinterBtn = document.getElementById('connect-printer-btn');
-        const disconnectAllBtn = document.getElementById('disconnect-all-btn');
-        const testPrintBtn = document.getElementById('test-print-btn');
-        const rotatePrinterBtn = document.getElementById('rotate-printer-btn');
-        const autoPrintCheckbox = document.getElementById('auto-print-checkbox');
-        
-        if (connectPrinterBtn) {
-            connectPrinterBtn.addEventListener('click', () => {
-                this.connectNewPrinter();
-            });
-        }
-        
-        if (disconnectAllBtn) {
-            disconnectAllBtn.addEventListener('click', () => {
-                this.disconnectAllPrinters();
-            });
-        }
-        
-        if (testPrintBtn) {
-            testPrintBtn.addEventListener('click', () => {
-                this.printTestTicket();
-            });
-        }
-        
-        if (rotatePrinterBtn) {
-            rotatePrinterBtn.addEventListener('click', () => {
-                this.rotateToNextPrinter();
-            });
-        }
+
         
         // Switch de delivery
         const deliverySwitch = document.getElementById('delivery-switch');
@@ -286,12 +247,7 @@ export class MobileApp {
             }
         });
         
-        if (autoPrintCheckbox) {
-            autoPrintCheckbox.addEventListener('change', (e) => {
-                CONFIG.PRINTER.AUTO_PRINT = e.target.checked;
-                console.log('Impresión automática:', CONFIG.PRINTER.AUTO_PRINT ? 'activada' : 'desactivada');
-            });
-        }
+
         if (confirmAddBtn) {
             confirmAddBtn.addEventListener('click', () => {
                 this.addProductToExistingOrder();
@@ -432,11 +388,7 @@ export class MobileApp {
             return this.addProductToExistingOrder();
         }
 
-        // Verificar si hay impresoras conectadas cuando está habilitado
-        if (CONFIG.PRINTER.ENABLED && !this.printerService.isConnected) {
-            this.uiManager.showError('Debe haber al menos una impresora conectada para crear órdenes');
-            return;
-        }
+
 
         // Deshabilitar botones de crear orden
         const createOrderBtns = document.querySelectorAll('.create-order-btn, #create-order');
@@ -451,23 +403,7 @@ export class MobileApp {
         try {
             const order = await this.dataManager.createOrder();
             
-            // Imprimir ticket de cocina automáticamente si está habilitado y hay impresoras conectadas
-            if (CONFIG.PRINTER.ENABLED && CONFIG.PRINTER.AUTO_PRINT && this.printerService.isConnected) {
-                try {
-                    console.log('🖨️ Imprimiendo ticket de cocina automáticamente...');
-                    await this.printerService.printKitchenTicket(order);
-                    this.uiManager.showSuccess('Orden creada y ticket de cocina impreso exitosamente');
-                } catch (printError) {
-                    console.error('❌ Error al imprimir ticket de cocina:', printError);
-                    this.uiManager.showSuccess(CONFIG.MESSAGES.ORDER_CREATED);
-                    this.uiManager.showError('Orden creada pero falló la impresión del ticket de cocina');
-                }
-            } else {
-                this.uiManager.showSuccess(CONFIG.MESSAGES.ORDER_CREATED);
-                if (CONFIG.PRINTER.ENABLED && CONFIG.PRINTER.AUTO_PRINT && !this.printerService.isConnected) {
-                    this.uiManager.showError('Conecta una impresora para impresión automática');
-                }
-            }
+            this.uiManager.showSuccess(CONFIG.MESSAGES.ORDER_CREATED);
             
             this.resetNewOrder();
             // Recargar órdenes y mesas desde el backend
@@ -507,186 +443,7 @@ export class MobileApp {
     }
 
     // Verificar soporte de Bluetooth
-    checkBluetoothSupport() {
-        const bluetoothSupportElement = document.getElementById('bluetooth-support');
-        if (bluetoothSupportElement) {
-            if (this.printerService.isBluetoothAvailable()) {
-                bluetoothSupportElement.textContent = 'Disponible';
-                bluetoothSupportElement.style.color = '#28a745';
-            } else {
-                bluetoothSupportElement.textContent = 'No disponible';
-                bluetoothSupportElement.style.color = '#dc3545';
-                // Deshabilitar controles de impresora
-                this.disablePrinterControls();
-            }
-        }
-    }
 
-    // Deshabilitar controles de impresora
-    disablePrinterControls() {
-        const connectBtn = document.getElementById('connect-printer-btn');
-        const disconnectBtn = document.getElementById('disconnect-printer-btn');
-        const testBtn = document.getElementById('test-print-btn');
-        
-        if (connectBtn) connectBtn.disabled = true;
-        if (disconnectBtn) disconnectBtn.disabled = true;
-        if (testBtn) testBtn.disabled = true;
-    }
-
-    // Actualizar estado de la interfaz de impresora
-    updatePrinterUI() {
-        const statusText = document.getElementById('printer-status-text');
-        const statusIndicator = document.getElementById('printer-status-indicator');
-        const connectedPrintersList = document.getElementById('connected-printers-list');
-        const printersContainer = document.getElementById('printers-container');
-        const disconnectAllBtn = document.getElementById('disconnect-all-btn');
-        const testBtn = document.getElementById('test-print-btn');
-        
-        const connectedPrinters = this.printerService.getConnectedPrinters();
-        const hasConnectedPrinters = connectedPrinters.length > 0;
-        
-        // Actualizar estado general
-        if (statusText) {
-            statusText.textContent = hasConnectedPrinters ? 
-                `${connectedPrinters.length} conectada${connectedPrinters.length > 1 ? 's' : ''}` : 
-                'Ninguna conectada';
-        }
-        
-        if (statusIndicator) {
-            statusIndicator.className = `status-indicator ${hasConnectedPrinters ? 'online' : 'offline'}`;
-        }
-        
-        // Mostrar/ocultar lista de impresoras
-        if (connectedPrintersList) {
-            connectedPrintersList.style.display = hasConnectedPrinters ? 'block' : 'none';
-        }
-        
-        // Actualizar lista de impresoras
-        if (printersContainer) {
-            printersContainer.innerHTML = '';
-            
-            connectedPrinters.forEach(printer => {
-                const printerElement = document.createElement('div');
-                printerElement.className = `printer-item ${printer.isActive ? 'active' : ''}`;
-                printerElement.innerHTML = `
-                    <div class="printer-info">
-                        <span class="printer-name">${printer.name}</span>
-                        <span class="printer-badge ${printer.isActive ? 'active' : 'connected'}">
-                            ${printer.isActive ? 'Activa' : 'Conectada'}
-                        </span>
-                    </div>
-                    <div class="printer-actions">
-                        ${!printer.isActive ? `<button class="btn-activate" onclick="app.setActivePrinter('${printer.deviceId}')">Activar</button>` : ''}
-                        <button class="btn-disconnect" onclick="app.disconnectPrinter('${printer.deviceId}')">
-                            Desconectar
-                        </button>
-                    </div>
-                `;
-                printersContainer.appendChild(printerElement);
-            });
-        }
-        
-        // Actualizar botones
-        if (disconnectAllBtn) disconnectAllBtn.disabled = !hasConnectedPrinters;
-        if (testBtn) testBtn.disabled = !hasConnectedPrinters;
-    }
-
-    // Conectar nueva impresora
-    async connectNewPrinter() {
-        try {
-            this.uiManager.showLoading();
-            
-            const result = await this.printerService.connect();
-            
-            if (result) {
-                this.updatePrinterUI();
-                this.uiManager.showSuccess(`Impresora "${result.name}" conectada exitosamente (${result.totalConnected}/3)`);
-                return true;
-            } else {
-                this.uiManager.showError('No se pudo conectar con la impresora');
-                return false;
-            }
-        } catch (error) {
-            console.error('Error al conectar impresora:', error);
-            this.uiManager.showError('Error al conectar con la impresora: ' + error.message);
-            return false;
-        } finally {
-            this.uiManager.hideLoading();
-        }
-    }
-
-    // Desconectar impresora específica
-    async disconnectPrinter(deviceId) {
-        try {
-            await this.printerService.disconnectPrinter(deviceId);
-            this.updatePrinterUI();
-            this.uiManager.showSuccess('Impresora desconectada');
-        } catch (error) {
-            console.error('Error al desconectar impresora:', error);
-            this.uiManager.showError('Error al desconectar impresora');
-        }
-    }
-
-    // Establecer impresora activa
-    setActivePrinter(deviceId) {
-        try {
-            const success = this.printerService.setActivePrinter(deviceId);
-            if (success) {
-                this.updatePrinterUI();
-                this.uiManager.showSuccess('Impresora activa cambiada');
-            } else {
-                this.uiManager.showError('No se pudo cambiar la impresora activa');
-            }
-        } catch (error) {
-            console.error('Error al cambiar impresora activa:', error);
-            this.uiManager.showError('Error al cambiar impresora activa');
-        }
-    }
-
-    // Desconectar todas las impresoras
-    async disconnectAllPrinters() {
-        try {
-            await this.printerService.disconnectAll();
-            this.updatePrinterUI();
-            this.uiManager.showSuccess('Todas las impresoras desconectadas');
-        } catch (error) {
-            console.error('Error al desconectar impresoras:', error);
-            this.uiManager.showError('Error al desconectar impresoras');
-        }
-    }
-
-    // Imprimir ticket de prueba
-    async printTestTicket() {
-        try {
-            this.uiManager.showLoading();
-            await this.printerService.printTest();
-            this.uiManager.showSuccess('Ticket de prueba impreso exitosamente');
-        } catch (error) {
-            console.error('Error al imprimir ticket de prueba:', error);
-            this.uiManager.showError('Error al imprimir ticket de prueba: ' + error.message);
-        } finally {
-            this.uiManager.hideLoading();
-        }
-    }
-
-    // Reimprimir ticket de orden existente
-    async reprintOrderTicket(orderId) {
-        try {
-            const order = this.dataManager.orders.find(o => o.orderId === orderId);
-            if (!order) {
-                throw new Error('Orden no encontrada');
-            }
-            
-            this.uiManager.showLoading();
-            await this.printerService.printOrder(order);
-            this.uiManager.showSuccess('Ticket reimpreso exitosamente');
-        } catch (error) {
-            console.error('Error al reimprimir ticket:', error);
-            this.uiManager.showError('Error al reimprimir ticket: ' + error.message);
-        } finally {
-            this.uiManager.hideLoading();
-        }
-    }
 
     // Refrescar aplicación
     async refreshApp() {
@@ -800,11 +557,7 @@ export class MobileApp {
             return;
         }
 
-        // Verificar si hay impresoras conectadas cuando la impresión automática está habilitada
-        if (CONFIG.PRINTER.ENABLED && CONFIG.PRINTER.AUTO_PRINT && !this.printerService.isConnected) {
-            this.uiManager.showError('Conecta una impresora antes de agregar productos');
-            return;
-        }
+
 
         // Deshabilitar botón de confirmar
         const confirmBtn = document.getElementById('confirm-add-to-order');
@@ -942,36 +695,7 @@ export class MobileApp {
             if (updatedOrderResponse.ok) {
                 const updatedOrder = await updatedOrderResponse.json();
                 
-                // Imprimir ticket de cocina automáticamente si está habilitado y hay impresoras conectadas
-                if (CONFIG.PRINTER.ENABLED && CONFIG.PRINTER.AUTO_PRINT && this.printerService.isConnected) {
-                    try {
-                        console.log('🖨️ Imprimiendo ticket de cocina para productos agregados...');
-                        
-                        // Preparar solo los productos agregados para el ticket de cocina
-                        const addedProductsForTicket = selectedProducts.map(product => ({
-                            name: product.name,
-                            quantity: product.quantity,
-                            comment: product.comment || '',
-                            priceType: product.priceType || 'personal',
-                            product: {
-                                name: product.name
-                            }
-                        }));
-                        
-                        // Usar el nuevo método que solo imprime productos agregados
-                        await this.printerService.printKitchenTicketForAddedProducts(updatedOrder, addedProductsForTicket);
-                        this.uiManager.showSuccess('Productos agregados y ticket de cocina impreso exitosamente');
-                    } catch (printError) {
-                        console.error('❌ Error al imprimir ticket de cocina:', printError);
-                        this.uiManager.showSuccess('Productos agregados exitosamente');
-                        this.uiManager.showError('Productos agregados pero falló la impresión del ticket de cocina');
-                    }
-                } else {
-                    this.uiManager.showSuccess('Productos agregados a la orden exitosamente');
-                    if (CONFIG.PRINTER.ENABLED && CONFIG.PRINTER.AUTO_PRINT && !this.printerService.isConnected) {
-                        this.uiManager.showError('Conecta una impresora para impresión automática');
-                    }
-                }
+                this.uiManager.showSuccess('Productos agregados a la orden exitosamente');
             } else {
                 this.uiManager.showSuccess('Productos agregados a la orden exitosamente');
             }
@@ -1065,12 +789,7 @@ window.addEventListener('beforeunload', (event) => {
         app.dataManager.saveOrders();
     }
     
-    // Prevenir recarga si hay impresoras conectadas
-    if (app && app.printerService && app.printerService.isConnected) {
-        event.preventDefault();
-        event.returnValue = '¿Estás seguro de que quieres recargar la página? Las impresoras se desconectarán.';
-        return event.returnValue;
-    }
+
 });
 
 // Handle visibility change
@@ -1081,32 +800,6 @@ document.addEventListener('visibilitychange', () => {
     }
     if (document.hidden && app && app.dataManager) {
         app.dataManager.saveOrders();
-    }
-});
-
-// Prevenir recarga con atajos de teclado cuando hay impresoras conectadas
-document.addEventListener('keydown', (event) => {
-    if (app && app.printerService && app.printerService.isConnected) {
-        // Prevenir F5
-        if (event.key === 'F5') {
-            event.preventDefault();
-            alert('No puedes recargar la página mientras haya impresoras conectadas. Desconéctalas primero.');
-            return false;
-        }
-        
-        // Prevenir Ctrl+R (Windows/Linux) o Cmd+R (Mac)
-        if ((event.ctrlKey || event.metaKey) && event.key === 'r') {
-            event.preventDefault();
-            alert('No puedes recargar la página mientras haya impresoras conectadas. Desconéctalas primero.');
-            return false;
-        }
-        
-        // Prevenir Ctrl+Shift+R (Windows/Linux) o Cmd+Shift+R (Mac) - recarga forzada
-        if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === 'R') {
-            event.preventDefault();
-            alert('No puedes recargar la página mientras haya impresoras conectadas. Desconéctalas primero.');
-            return false;
-        }
     }
 });
 
