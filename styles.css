@@ -1462,11 +1462,6 @@ body {
   border-top: 1px solid var(--border);
 }
 
-/* Ajuste específico: bajar un poco el botón Continuar en Seleccionar Mesa */
-#step-tables .step-actions {
-  bottom: -12px;
-}
-
 /* Bottom Navigation */
 .bottom-nav {
   position: fixed;
