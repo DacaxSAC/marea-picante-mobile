@@ -246,6 +246,15 @@ export class MobileApp {
                 }
             }
         });
+
+        // Sincronizar atributo value de inputs de comentario con el valor escrito
+        document.addEventListener('input', (e) => {
+            if (e.target && e.target.classList && e.target.classList.contains('comment-input')) {
+                const inputEl = e.target;
+                inputEl.setAttribute('value', inputEl.value);
+                
+            }
+        });
         
 
         if (confirmAddBtn) {
@@ -557,6 +566,16 @@ export class MobileApp {
             return;
         }
 
+        // Capturar comentarios actuales de todos los inputs
+        const currentComments = {};
+        document.querySelectorAll('.comment-input').forEach(input => {
+            const productId = input.getAttribute('data-product-id');
+            const priceType = input.getAttribute('data-price-type');
+            const key = `${productId}-${priceType}`;
+            currentComments[key] = input.value.trim();
+        });
+        console.log('📝 Comentarios capturados para agregar a orden existente:', currentComments);
+
 
 
         // Deshabilitar botón de confirmar
@@ -583,6 +602,10 @@ export class MobileApp {
                     subtotal: product.unitPrice * product.quantity,
                     priceType: product.priceType || 'personal'
                 };
+                const key = `${product.productId}-${product.priceType || 'personal'}`;
+                const comment = currentComments[key] || '';
+                productData.comment = comment;
+                console.log('📦 Enviando producto a orden con comentario', { productId: product.productId, priceType: product.priceType || 'personal', comment });
 
                 const response = await fetch(`${CONFIG.API_BASE_URL}/orders/${this.targetOrderId}/products`, {
                     method: 'POST',
@@ -621,8 +644,10 @@ export class MobileApp {
                         quantity: tapersPersonales,
                         unitPrice: taperProduct ? taperProduct.pricePersonal : 1.00,
                         subtotal: tapersPersonales * (taperProduct ? taperProduct.pricePersonal : 1.00),
-                        priceType: 'personal'
+                        priceType: 'personal',
+                        comment: 'Tapers descartables para productos personales'
                     };
+                    console.log('📦 Enviando tapers personales', taperPersonalData);
                     
                     const taperResponse = await fetch(`${CONFIG.API_BASE_URL}/orders/${this.targetOrderId}/products`, {
                         method: 'POST',
@@ -644,8 +669,10 @@ export class MobileApp {
                         quantity: tapersFuente,
                         unitPrice: taperProduct ? taperProduct.priceFuente : 2.00,
                         subtotal: tapersFuente * (taperProduct ? taperProduct.priceFuente : 2.00),
-                        priceType: 'fuente'
+                        priceType: 'fuente',
+                        comment: 'Tapers descartables para productos fuente'
                     };
+                    console.log('📦 Enviando tapers fuente', taperFuenteData);
                     
                     const taperResponse = await fetch(`${CONFIG.API_BASE_URL}/orders/${this.targetOrderId}/products`, {
                         method: 'POST',
@@ -673,8 +700,10 @@ export class MobileApp {
                         quantity: 1,
                         unitPrice: deliveryCharge,
                         subtotal: deliveryCharge,
-                        priceType: 'personal'
+                        priceType: 'personal',
+                        comment: 'Cargo por servicio de delivery'
                     };
+                    console.log('📦 Enviando cargo por delivery', deliveryChargeData);
                     
                     const deliveryResponse = await fetch(`${CONFIG.API_BASE_URL}/orders/${this.targetOrderId}/products`, {
                         method: 'POST',
@@ -773,8 +802,6 @@ if ('serviceWorker' in navigator) {
             });
     });
 }
-
-
 
 // Performance monitoring
 window.addEventListener('load', () => {

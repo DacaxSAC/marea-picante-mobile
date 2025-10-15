@@ -246,6 +246,16 @@ export class DataManager {
         const orderItems = [];
         let total = 0;
         
+        // Capturar comentarios actuales de todos los inputs antes de armar la orden
+        const currentComments = {};
+        document.querySelectorAll('.comment-input').forEach(input => {
+            const productId = input.getAttribute('data-product-id');
+            const priceType = input.getAttribute('data-price-type');
+            const key = `${productId}-${priceType}`;
+            currentComments[key] = input.value.trim();
+        });
+        console.log('📝 Comentarios capturados antes de crear orden:', currentComments);
+        
         this.data.selectedProducts.forEach((quantities, productId) => {
             const product = this.findProductById(productId);
             if (product) {
@@ -258,9 +268,10 @@ export class DataManager {
                     const subtotal = product.pricePersonal * quantities.personal;
                     const productName = hasBothPrices ? product.name + ' (Personal)' : product.name;
                     
-                    // Obtener comentario del input correspondiente
-                    const commentInput = document.querySelector(`input.comment-input[data-product-id="${productId}"][data-price-type="personal"]`);
-                    const comment = commentInput ? commentInput.value.trim() : '';
+                    // Obtener comentario capturado
+                    const key = `${productId}-personal`;
+                    const comment = currentComments[key] || '';
+                    console.log('➡️ Agregando item PERSONAL con comentario', { productId, name: productName, comment });
                     
                     orderItems.push({
                         productId: product.productId || product.id,
@@ -279,9 +290,10 @@ export class DataManager {
                     const subtotal = product.priceFuente * quantities.fuente;
                     const productName = hasBothPrices ? product.name + ' (Fuente)' : product.name;
                     
-                    // Obtener comentario del input correspondiente
-                    const commentInput = document.querySelector(`input.comment-input[data-product-id="${productId}"][data-price-type="fuente"]`);
-                    const comment = commentInput ? commentInput.value.trim() : '';
+                    // Obtener comentario capturado
+                    const key = `${productId}-fuente`;
+                    const comment = currentComments[key] || '';
+                    console.log('➡️ Agregando item FUENTE con comentario', { productId, name: productName, comment });
                     
                     orderItems.push({
                         productId: product.productId || product.id,
